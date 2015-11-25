@@ -1,4 +1,4 @@
-# ToolpathGenerator
+# ToolpathGenerator(Beta)
 Automating Toolpath Generation for 3-Axis CNC 
 
 ToolpathGenerator automates toolpath planing process involved in toolpath generation for 3-Axis CNC. This work seeks to reduce barrier faced by entry level makers and designer involved in CNC machining. 
