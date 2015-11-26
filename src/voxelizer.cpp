@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
 	readSTL(geometry, argv[1]);
 	geometry.scaleTo(300);
 	
-	voxelize(geometry, voxels);
+	voxelize(geometry, voxels, 0.1, 0, 1, 0);
 	
 	std::cerr<<"\nWriting to file...";
 	writeVoxels(voxels, "voxels.txt", false);
