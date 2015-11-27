@@ -510,7 +510,7 @@ void writeGcode(bool &cutting, BoolDict &isInList, Matrix &regionmap, string &to
 		}
 		else{
 			toolpath += ("G1 X" + to_string(iprev) + " Y" + to_string(jprev) +"\n"); 
-			toolpath += ("G0 Z" + to_string(safeHeight) + "\n");
+			toolpath += ("G1 Z0\n");
 			toolpath += ("G0 ");
 			cutting = false; 	
 		}
@@ -518,7 +518,7 @@ void writeGcode(bool &cutting, BoolDict &isInList, Matrix &regionmap, string &to
 	else{
 		if(isInList[regionmap[i][j]]){
 			toolpath += ( "X" + to_string(i) + " Y" + to_string(j) +"\n"); 
-			toolpath += ("G0 Z" + to_string(regionCurrentHeight-dep) + "\n");
+			toolpath += ("G1 Z" + to_string(regionCurrentHeight-dep-safeHeight) + "\n");
 			cutting = true;
 		}
 	}
@@ -528,7 +528,7 @@ void writeGcode(bool &cutting, BoolDict &isInList, Matrix &regionmap, string &to
 void endCut(bool &cutting, BoolDict &isInList, Matrix &regionmap, string &toolpath, int safeHeight, int regionCurrentHeight, int i , int j, int dep, int iprev, int jprev){
 	toolpath += ("G1 X" + to_string(iprev) + " Y" + to_string(jprev) +"\n"); 
 	//cout<<"iprev: "<<iprev<<", jprev: "<<jprev<<"i: "<<i<<", j= "<<j<<"\n";
-	toolpath += ("G0 Z" + to_string(safeHeight) + "\n");
+	toolpath += ("G1 Z0\n");
 	toolpath += ("G0 ");
 }
 
@@ -604,7 +604,7 @@ string machine(VolumetricModel &model, string orientation, AdjList vlist, Matrix
 						else{
 							if(cutting){
 								toolpath += ("G1 X" + to_string(iprev) + " Y" + to_string(jprev) +"\n"); 
-								toolpath += ("G0 Z" + to_string(safeHeight) + "\n");
+								toolpath += ("G1 Z0 \n");
 								toolpath += ("G0 ");
 								cutting = false; 
 							}
@@ -620,7 +620,7 @@ string machine(VolumetricModel &model, string orientation, AdjList vlist, Matrix
 						else{
 							if(cutting){
 								toolpath += ("G1 X" + to_string(iprev) + " Y" + to_string(jprev) +"\n"); 
-								toolpath += ("G0 Z" + to_string(safeHeight) + "\n");
+								toolpath += ("G1 Z0\n");
 								toolpath += ("G0 ");
 								cutting = false; 
 							}
@@ -643,7 +643,7 @@ string machine(VolumetricModel &model, string orientation, AdjList vlist, Matrix
 						else{
 							if(cutting){
 								toolpath += ("G1 X" + to_string(iprev) + " Y" + to_string(jprev) +"\n"); 
-								toolpath += ("G0 Z" + to_string(safeHeight) + "\n");
+								toolpath += ("G1 Z0\n");
 								toolpath += ("G0 ");
 								cutting = false; 
 							}
@@ -659,7 +659,7 @@ string machine(VolumetricModel &model, string orientation, AdjList vlist, Matrix
 						else{
 							if(cutting){
 								toolpath += ("G1 X" + to_string(iprev) + " Y" + to_string(jprev) +"\n"); 
-								toolpath += ("G0 Z" + to_string(safeHeight) + "\n");
+								toolpath += ("G1 Z0\n");
 								toolpath += ("G0 ");
 								cutting = false; 
 							}
@@ -678,7 +678,7 @@ string machine(VolumetricModel &model, string orientation, AdjList vlist, Matrix
 	int length = toolpath.size();
 	if(toolpath.substr(length-3, 3) == "G0 ")
 		toolpath = toolpath.substr(0, length-3);
-	toolpath += "G0 Z" + to_string(safeHeight) + "\n";
+	toolpath += "G1 Z0\n";
 	return toolpath;
 }
 
@@ -719,7 +719,8 @@ void processGraph(Graph &graph , AdjList &vlist, int depth){
 
 //converts graph to toolpath using connected component and zigzag path generation strategy
 string toToolpath(VolumetricModel &model, string orientation, Graph &graph, Matrix &regionmap,int safeHeight, int maxHeight, int TOOL_DIA){
-	string toolpath = "G21\nG90\nG92 X0 Y0 Z" + to_string(maxHeight) + "\n";
+	//string toolpath = "G21\nG90\nG92 X0 Y0 Z" + to_string(maxHeight) + "\n";
+	string toolpath = "G21\nG90\n" ;
 	int u;
 	int i;
 	int noOfRegion = graph.size();
@@ -732,7 +733,7 @@ string toToolpath(VolumetricModel &model, string orientation, Graph &graph, Matr
 
 	toDepthGraph(graph, maxHeight);
 
-	toolpath += "G0 Z" + to_string(safeHeight) + "\n";
+	toolpath += "G1 Z0\n";
 	while(graph.size() != 0){
 		u = pickMin(graph);
 
