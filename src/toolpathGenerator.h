@@ -510,7 +510,7 @@ void writeGcode(bool &cutting, BoolDict &isInList, Matrix &regionmap, string &to
 		}
 		else{
 			toolpath += ("G1 X" + to_string(iprev) + " Y" + to_string(jprev) +"\n"); 
-			toolpath += ("G1 Z0\n");
+			toolpath += ("G1 Z2\n");
 			toolpath += ("G0 ");
 			cutting = false; 	
 		}
@@ -528,7 +528,7 @@ void writeGcode(bool &cutting, BoolDict &isInList, Matrix &regionmap, string &to
 void endCut(bool &cutting, BoolDict &isInList, Matrix &regionmap, string &toolpath, int safeHeight, int regionCurrentHeight, int i , int j, int dep, int iprev, int jprev){
 	toolpath += ("G1 X" + to_string(iprev) + " Y" + to_string(jprev) +"\n"); 
 	//cout<<"iprev: "<<iprev<<", jprev: "<<jprev<<"i: "<<i<<", j= "<<j<<"\n";
-	toolpath += ("G1 Z0\n");
+	toolpath += ("G1 Z2\n");
 	toolpath += ("G0 ");
 }
 
@@ -604,7 +604,7 @@ string machine(VolumetricModel &model, string orientation, AdjList vlist, Matrix
 						else{
 							if(cutting){
 								toolpath += ("G1 X" + to_string(iprev) + " Y" + to_string(jprev) +"\n"); 
-								toolpath += ("G1 Z0 \n");
+								toolpath += ("G1 Z2 \n");
 								toolpath += ("G0 ");
 								cutting = false; 
 							}
@@ -620,7 +620,7 @@ string machine(VolumetricModel &model, string orientation, AdjList vlist, Matrix
 						else{
 							if(cutting){
 								toolpath += ("G1 X" + to_string(iprev) + " Y" + to_string(jprev) +"\n"); 
-								toolpath += ("G1 Z0\n");
+								toolpath += ("G1 Z2\n");
 								toolpath += ("G0 ");
 								cutting = false; 
 							}
@@ -643,7 +643,7 @@ string machine(VolumetricModel &model, string orientation, AdjList vlist, Matrix
 						else{
 							if(cutting){
 								toolpath += ("G1 X" + to_string(iprev) + " Y" + to_string(jprev) +"\n"); 
-								toolpath += ("G1 Z0\n");
+								toolpath += ("G1 Z2\n");
 								toolpath += ("G0 ");
 								cutting = false; 
 							}
@@ -659,7 +659,7 @@ string machine(VolumetricModel &model, string orientation, AdjList vlist, Matrix
 						else{
 							if(cutting){
 								toolpath += ("G1 X" + to_string(iprev) + " Y" + to_string(jprev) +"\n"); 
-								toolpath += ("G1 Z0\n");
+								toolpath += ("G1 Z2\n");
 								toolpath += ("G0 ");
 								cutting = false; 
 							}
@@ -678,7 +678,7 @@ string machine(VolumetricModel &model, string orientation, AdjList vlist, Matrix
 	int length = toolpath.size();
 	if(toolpath.substr(length-3, 3) == "G0 ")
 		toolpath = toolpath.substr(0, length-3);
-	toolpath += "G1 Z0\n";
+	toolpath += "G1 Z2\n";
 	return toolpath;
 }
 
@@ -733,7 +733,7 @@ string toToolpath(VolumetricModel &model, string orientation, Graph &graph, Matr
 
 	toDepthGraph(graph, maxHeight);
 
-	toolpath += "G1 Z0\n";
+	toolpath += "G1 Z2\n";
 	while(graph.size() != 0){
 		u = pickMin(graph);
 
