@@ -191,6 +191,10 @@ void fillVolume(list<Chromosome> &generation){
 	}
 
 }
+//compares volume of pair, used for sorting 
+bool compareVolume(pair<int, string> v1, pair<int, string> v2){
+	return v1.first > v2.first;
+}
 
 //fitness function using quality methds not quality rank as mentioned in the paper
 list<Chromosome> selection(list<Chromosome> &generation){
@@ -219,59 +223,45 @@ list<Chromosome> selection(list<Chromosome> &generation){
 }	
 
 //genetic algorithm implementation for toolpath sequence generation 
-Chromosome generateSequence(VolumetricModel model){
+list<string> generateSequence(VolumetricModel model){
 	/*
 		input: model of the object to be made 
 		purpose: to generate the optimal sequence of operation that can carve the given model using 3 axis cnc 
 		output: optimal sequence of orientation that can build model using a 3-axis cnc machine 
 	*/
 
-	list<Chromosome> generation;
+	vector<pair<int, string> > volumes(NOOFORIENTATION);
 	int i;
 
 	//generating intital generation of chromosome with six possible degrees of rotation 
 	for(i=0; i<NOOFORIENTATION; i++){
-		generation.push_back(Chromosome(model, ORIENTATION[i]));
+		volumes[i] = make_pair(model.calculateMachinableVolume(ORIENTATION[i]), ORIENTATION[i]);
+	}
+	sort(volumes.begin(), volumes.end(), compareVolume );
+
+	list<string> optimalSet;
+
+	for(i=0; i<NOOFORIENTATION; i++){
+		optimalSet.push_back(volumes[i].second);
 	}
 
-	//performing steps of evolution on initial set of chromosome generation 
-	volumeEstimator(generation);
-	generation = selection(generation);
-	fillVolume(generation);
+	return optimalSet;
 
-	//performing evolution for next 5 generation 
-	for(i=0; i<NOOFORIENTATION-1; i++){
-		
-		//generate next generation of chromosomes through mutation 
-		generation = mutation(generation);
-
-		//estimating machinable volume to get an idea about the quality of individual 
-		volumeEstimator(generation);
-		
-		//selecting the fittest of chromosomes for next generation 
-		generation = selection(generation);
-
-		//fill the model for the machined object 
-		fillVolume(generation);
-	}
-
-	return generation.front();
 }
 
 //generate toolpath for sequence 
-list<string> toolpathGeneratorForSequence(Chromosome organism, VolumetricModel model, int TOOL_DIA, int lMax, int bMax, int hMax, string folderName, bool printVolume){
-	list<string> sequence = organism.sequence;
-	list<ll> volumes = organism.volumes;
+pair<list<string>, list<string> > toolpathGeneratorForSequence(list<string> sequence, VolumetricModel model, int TOOL_DIA, int lMax, int bMax, int hMax, string folderName, bool printVolume){
+	
 
 	//iterator to access sequence of orientation 
 	list<string>::iterator it;
 
-	list<ll>::iterator itt = volumes.begin();
+	list<string> machiningSequence;
+
 	list<string> toolpaths; 
 
 	for(it = sequence.begin(); it != sequence.end(); it++){
-		if(*itt != 0){
-			//printing the model for debugging purpose 
+					//printing the model for debugging purpose 
 			if(printVolume){
 				ofstream myfile;
 		 		myfile.open ("./" + folderName + "/" + *it + ".interim.raw", ios::binary );
@@ -281,93 +271,45 @@ list<string> toolpathGeneratorForSequence(Chromosome organism, VolumetricModel m
 			}
 			//converting the model to heightmap in a given orientation 
 			Matrix heightmap = model.toHeightmap(*it);
-			int i, j;
+			int machinedVolume = model.calculateMachinableVolume(*it);
+			if(machinedVolume != 0){
+				int i, j;
+				machiningSequence.push_back(*it);
 
-			//converting heightmap to graph and regionmap for toolpath generation
-			pair<Graph, Matrix> graphRegionmap = toGraph(heightmap);
-			Graph graph = graphRegionmap.first;
-			Matrix regionmap = graphRegionmap.second;
+				//converting heightmap to graph and regionmap for toolpath generation
+				pair<Graph, Matrix> graphRegionmap = toGraph(heightmap);
+				Graph graph = graphRegionmap.first;
+				Matrix regionmap = graphRegionmap.second;
 
-			//calculating toolpath for the given model and orientation
-			
-			string toolpath;// = toToolpath(model, *it, graph, regionmap, safeHeight, maxHeight, TOOL_DIA);
-			if(*it == "xy+" || *it == "xy-"){
-				int safeHeight = hMax +2;
-				toolpath = toToolpath(model, *it, graph, regionmap, safeHeight, hMax, TOOL_DIA);
+				//calculating toolpath for the given model and orientation
+				
+				string toolpath;// = toToolpath(model, *it, graph, regionmap, safeHeight, maxHeight, TOOL_DIA);
+				if(*it == "xy+" || *it == "xy-"){
+					int safeHeight = hMax +2;
+					toolpath = toToolpath(model, *it, graph, regionmap, safeHeight, hMax, TOOL_DIA);
+				}
+				else if(*it == "yz+" || *it == "yz-"){
+					int safeHeight = lMax +2;
+					toolpath = toToolpath(model, *it, graph, regionmap, safeHeight, lMax, TOOL_DIA);	
+				}
+				else if(*it == "xz+" || *it == "xz-"){
+					int safeHeight = bMax +2;
+					toolpath = toToolpath(model, *it, graph, regionmap, safeHeight, bMax, TOOL_DIA);		
+				}	
+
+				toolpaths.push_back(toolpath);
+
+				//filling machined volume so that it would be outta consideration in next orientation
+				model.fillMachinableVolume(*it);
 			}
-			else if(*it == "yz+" || *it == "yz-"){
-				int safeHeight = lMax +2;
-				toolpath = toToolpath(model, *it, graph, regionmap, safeHeight, lMax, TOOL_DIA);	
-			}
-			else if(*it == "xz+" || *it == "xz-"){
-				int safeHeight = bMax +2;
-				toolpath = toToolpath(model, *it, graph, regionmap, safeHeight, bMax, TOOL_DIA);		
-			}	
-
-			toolpaths.push_back(toolpath);
-
-			//filling machined volume so that it would be outta consideration in next orientation
-			model.fillMachinableVolume(*it);
-			
-		}
-		else{
-			//if the volume extracted is zero there is no point in exploring other orientation, they ll be zero 
-			break;
-		}
-		itt++;
-	}
-
-	return toolpaths;
-}
-
-
-string toolpathGeneratorForSequence(list<string> sequence, VolumetricModel model, int TOOL_DIA, int lMax, int bMax, int hMax){
-	
-
-	//iterator to access sequence of orientation 
-	list<string>::iterator it;
-
-	
-	string toolpath; 
-
-	for(it = sequence.begin(); it != sequence.end(); it++){
-		
-			//converting the model to heightmap in a given orientation 
-			Matrix heightmap = model.toHeightmap(*it);
-			int i, j;
-
-			//converting heightmap to graph and regionmap for toolpath generation
-			pair<Graph, Matrix> graphRegionmap = toGraph(heightmap);
-			Graph graph = graphRegionmap.first;
-			Matrix regionmap = graphRegionmap.second;
-
-			//calculating toolpath for the given model and orientation
-			//int maxHeight = calculateMaxZ(heightmap);
-			
-			if(*it == "xy+" || *it == "xy-"){
-				int safeHeight = hMax +2;
-				toolpath = toToolpath(model, *it, graph, regionmap, safeHeight, hMax, TOOL_DIA);
-			}
-			else if(*it == "yz+" || *it == "yz-"){
-				int safeHeight = lMax +2;
-				toolpath = toToolpath(model, *it, graph, regionmap, safeHeight, lMax, TOOL_DIA);	
-			}
-			else if(*it == "xz+" || *it == "xz-"){
-				int safeHeight = bMax +2;
-				toolpath = toToolpath(model, *it, graph, regionmap, safeHeight, bMax, TOOL_DIA);		
-			}	
-
-			
-
-			//filling machined volume so that it would be outta consideration in next orientation
-			model.fillMachinableVolume(*it);
-			
-		
 		
 	}
 
-	return toolpath;
+	return make_pair(machiningSequence, toolpaths);
 }
+
+
+
 
 void writeSequenceToFile(string folderName, Chromosome optimalOrganism){
 	list<string> sequence = optimalOrganism.sequence;
@@ -418,16 +360,23 @@ int main(int argc, char *argv[]){
 	VolumetricModel model(voxels, lMax, bMax, hMax);
 
 	//generating sequence using genetic algorithm 
-	Chromosome optimalOrganism = generateSequence(model);
-	writeSequenceToFile(folderName, optimalOrganism);
+	list<string> sequence = generateSequence(model);
+	list<string>::iterator it;
+
 	
 	
 	//generating toolpath for the optimal sequence thats produced by sequence generator 
-	list<string> sk = toolpathGeneratorForSequence(optimalOrganism, model, TOOL_DIA,lMax,bMax, hMax,folderName, false);
-	list<string>::iterator it;int count = 1;
+	pair<list<string>, list<string> > skk = toolpathGeneratorForSequence(sequence, model, TOOL_DIA,lMax,bMax, hMax,folderName, false);
+	list<string> sk = skk.second;
+	sequence = skk.first;
+
+	for(it = sequence.begin(); it != sequence.end(); it++)
+		cout<< *it<<"\n";
+	list<string>::iterator itt;int count = 1;
+	itt = sequence.begin();
 
 	//saving toolpath in folder "OrientationOutput"
-	list<string>::iterator itt = optimalOrganism.sequence.begin();
+	
  	for(it = sk.begin(); it != sk.end(); it++){
  		ofstream myfile;
  		myfile.open ("./" + folderName + "/" + *itt + ".gcode" );
@@ -437,9 +386,9 @@ int main(int argc, char *argv[]){
  		myfile.close();
  	}
 
-	// list<string> sk;
-	// sk.push_back("xz+");
-	// cout<< toolpathGeneratorForSequence(sk, model, TOOL_DIA, lMax, bMax, hMax);
+	// // list<string> sk;
+	// // sk.push_back("xz+");
+	// // cout<< toolpathGeneratorForSequence(sk, model, TOOL_DIA, lMax, bMax, hMax);
 
 
 	return 0;
