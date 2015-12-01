@@ -223,7 +223,7 @@ list<Chromosome> selection(list<Chromosome> &generation){
 }	
 
 //genetic algorithm implementation for toolpath sequence generation 
-list<string> generateSequence(VolumetricModel model){
+list<string> generateSequence(VolumetricModel &model){
 	/*
 		input: model of the object to be made 
 		purpose: to generate the optimal sequence of operation that can carve the given model using 3 axis cnc 
@@ -250,7 +250,7 @@ list<string> generateSequence(VolumetricModel model){
 }
 
 //generate toolpath for sequence 
-pair<list<string>, list<string> > toolpathGeneratorForSequence(list<string> sequence, VolumetricModel model, int TOOL_DIA, int lMax, int bMax, int hMax, string folderName, bool printVolume){
+pair<list<string>, list<string> > toolpathGeneratorForSequence(list<string> sequence, VolumetricModel &model, int TOOL_DIA, int lMax, int bMax, int hMax, string folderName, bool printVolume){
 	
 
 	//iterator to access sequence of orientation 
