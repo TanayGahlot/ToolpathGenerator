@@ -311,21 +311,15 @@ pair<list<string>, list<string> > toolpathGeneratorForSequence(list<string> sequ
 
 
 
-void writeSequenceToFile(string folderName, Chromosome optimalOrganism){
-	list<string> sequence = optimalOrganism.sequence;
-	list<ll> volumes = optimalOrganism.volumes;
+void writeSequenceToFile(string folderName, list<string> sequence){
 	list<string>::iterator it;
-	list<ll>::iterator itt = volumes.begin();
+
 	ofstream myfile;
 
 	myfile.open("./" + folderName + "/sequence.txt");
 
 	for(it = sequence.begin(); it != sequence.end(); it++){
-		if(*itt != 0)
-			myfile << (*it + "->");
-		else
-			break;
-		itt++;
+		myfile << (*it + "->");
 	}
 
 	myfile.close();
@@ -370,18 +364,17 @@ int main(int argc, char *argv[]){
 	list<string> sk = skk.second;
 	sequence = skk.first;
 
-	for(it = sequence.begin(); it != sequence.end(); it++)
-		cout<< *it<<"\n";
-	list<string>::iterator itt;int count = 1;
+	list<string>::iterator itt;
 	itt = sequence.begin();
 
+	//writing sequence to the test file 
+	writeSequenceToFile(folderName, sequence);
+
 	//saving toolpath in folder "OrientationOutput"
-	
  	for(it = sk.begin(); it != sk.end(); it++){
  		ofstream myfile;
  		myfile.open ("./" + folderName + "/" + *itt + ".gcode" );
  		myfile<<*it;
- 		count++;
  		itt++;
  		myfile.close();
  	}

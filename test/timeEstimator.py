@@ -1,0 +1,49 @@
+#oggpnosn 
+#hkhr 
+
+#time estimator: estimates time it take to machine the input gcode 
+
+import sys
+import math
+
+#default feedrate 
+feedrate = 250 
+
+#assigning current x,y,z position to origin 
+xcurrent = 0
+ycurrent = 0
+zcurrent = 0
+
+#assigning machining time ton be zero 
+machineTime = 0
+
+#taking gcode input from stdin
+command = raw_input()
+while command:
+	command = command.split(' ')
+	if command[0] == "G0" or command[0] == "G1":
+		xnext = xcurrent
+		ynext = ycurrent
+		znext = zcurrent
+		for spec in command[1:]:
+			if spec:
+				if spec[0] == "X":
+					xnext = float(spec[1:])
+				elif spec[0] == "Y":
+					ynext = float(spec[1:])
+				elif spec[0] == "Z":
+					znext = float(spec[1:])
+		distance = math.sqrt((xnext - xcurrent)**2 + (ynext - ycurrent)**2 + (znext - zcurrent)**2)
+		machineTime += distance*1.0/feedrate
+		xcurrent = xnext
+		ycurrent = ynext
+		zcurrent = znext
+	try:
+		command = raw_input()
+	except EOFError:
+		print machineTime
+		sys.exit(0)
+
+
+
+
