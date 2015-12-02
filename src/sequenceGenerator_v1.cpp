@@ -43,184 +43,13 @@ int calculateMaxZ(vector<vector<int> > heightmap){
 		return globalMaximum;
 }
 
-//VolumetricModel class handles volumetric representation
 
-
-
-//supportive class type chromosome that repersents a set of orientation 
-class Chromosome{
-public:
-	int currentGeneration;
-	VolumetricModel model;
-	string currentOrientation;
-	list<string> orientationLeft;
-	list<string> sequence;
-	list<ll> volumes;
-	ll quality;
-
-	Chromosome(VolumetricModel model, string orientation):model(model), currentOrientation(orientation){
-		int i;
-		currentGeneration = 6;
-		quality =0;
-		for(i=0; i<6; i++){
-			if(ORIENTATION[i] != orientation)
-				orientationLeft.push_back(ORIENTATION[i]);
-		}
-		//adding orientation to sequence list 
-		sequence.push_back(orientation);
-		
-	}
-
-	Chromosome(VolumetricModel model, string orientation, list<string> orientationToConsider, int currentGeneration, list<string> sequencePreviousGeneration, int quality, list<ll> volumes):model(model), currentGeneration(currentGeneration), quality(quality), volumes(volumes){
-		orientationLeft = orientationToConsider;
-		
-		//removing orientation from orientation to consider 
-		list<string>::iterator it = find(orientationLeft.begin(), orientationLeft.end(), orientation);
-		orientationLeft.erase(it);
-		
-		//assigning current orientation to orientation 
-		currentOrientation = orientation;
-
-		//adding new orientation to sequence
-		sequence = sequencePreviousGeneration;
-		sequence.push_back(orientation);
-	}
-
-	list<Chromosome> generateOffsprings(){
-		int i;
-		list<Chromosome> offspring;
-		string orientation;
-		list<string>::iterator it;
-		for(it=orientationLeft.begin(); it!=orientationLeft.end(); it++){
-			Chromosome *child = new Chromosome(model, *it, orientationLeft, currentGeneration-1, sequence, quality, volumes);
-			offspring.push_back(*child);
-		}
-		
-		return offspring; 
-	}	
-
-	ll calculateMachinableVolume(){
-		/*input: None
-		   purpose: calculate volume that can be machined 
-		   output: volume that can be machined
-		*/
-		ll volume = model.calculateMachinableVolume(currentOrientation);
-		return volume;
-	}
-
-	void fillMachinableVolume(){
-		/*input: None
-		   purpose: fills the machinable volume in the direction of current orientation  
-		   output: None  
-		*/
-		model.fillMachinableVolume(currentOrientation);
-	}
-
-};
-
-void operator<<(ostream &out, Chromosome &organism){
-	list<string>::iterator it;
-	list<ll>::iterator itt = organism.volumes.begin();
-
-	for(it= organism.sequence.begin(); it!= organism.sequence.end(); it++){
-		if(*itt != 0)
-			out<<*it<<"("<<*itt<<")"<<" -> ";
-		itt++;
-	}
-
-	out<<"\n";
-}
-
-bool compareChromosomes(Chromosome c1, Chromosome c2){
-	//this sorts in descending order 
-	return c1.quality>c2.quality;	
-}
-
-
-
-//implementing mutation function that generates organization 
-list<Chromosome> mutation(list<Chromosome> &generation){
-	list<Chromosome> *newGeneration = new list<Chromosome>();
-	list<Chromosome>::iterator it;
-	for(it = generation.begin(); it != generation.end(); it++){
-		//generating offsppring forn current generation 
-		list<Chromosome> offsprings =  it->generateOffsprings();
-		list<Chromosome>::iterator nit;
-		for(nit = offsprings.begin(); nit!=offsprings.end(); nit++){
-			newGeneration->push_back(*nit);
-		}
-	}
-	return *newGeneration;
-}
-
-
-void volumeEstimator(list<Chromosome> &generation){
-	/*input: list of Chromosomes
-	   purpose: for each chromosome calculate volume that can be machined 
-	   output: each chromosome will be assigned a machinable volume and quality score will be calculated 
-	*/
-
-	list<Chromosome>::iterator organismIterator;
-	ll volume;
-
-	for(organismIterator = generation.begin(); organismIterator != generation.end(); organismIterator++){
-
-		//calculate the volume that can be machined 
-		volume = organismIterator->calculateMachinableVolume();
-
-		//update the list of volumes with the current volume
-		(organismIterator->volumes).push_back(volume);
-
-		//update the quality score for assessment 
-		organismIterator->quality += (organismIterator->currentGeneration*volume);
-	}
-
-}
-
-
-void fillVolume(list<Chromosome> &generation){
-	/*
-		input: generation of chromosomes 
-		purpose: to mutate the model to fill the volume that being machined 
-		output: Mutated model object in chromosomes 
-	*/
-	list<Chromosome>::iterator it;
-
-	for(it = generation.begin(); it != generation.end(); it++){
-		it->fillMachinableVolume();
-	}
-
-}
 //compares volume of pair, used for sorting 
 bool compareVolume(pair<int, string> v1, pair<int, string> v2){
 	return v1.first > v2.first;
 }
 
-//fitness function using quality methds not quality rank as mentioned in the paper
-list<Chromosome> selection(list<Chromosome> &generation){
-	/*
-		input: generation of chromosome
-		purpose: to select fittest of chromosome 
-		output: list of chromosome that made it to next generation 
-	*/
 
-	int count =0;
-	list<Chromosome>::iterator it; 
-	list<Chromosome> newGeneration;
-	
-	//rank chromosome according to their fitness values in descending order 
-	generation.sort(compareChromosomes);
-	
-	//only select the chromosomes that rank high in terms of quality 
-	for(it = generation.begin(); it != generation.end(); it++){
-		count+=1;
-		newGeneration.push_back(*it);
-		if(count >= MAXIMUM_SIZE_OF_GENERATION)
-			break;
-	}
-
-	return newGeneration;
-}	
 
 //genetic algorithm implementation for toolpath sequence generation 
 list<string> generateSequence(VolumetricModel &model){
@@ -270,10 +99,10 @@ pair<list<string>, list<string> > toolpathGeneratorForSequence(list<string> sequ
 		 		// myfile.write(voxelsStream, lMax*hMax*bMax);
 			}
 			//converting the model to heightmap in a given orientation 
-			Matrix heightmap = model.toHeightmap(*it);
 			int machinedVolume = model.calculateMachinableVolume(*it);
 			if(machinedVolume != 0){
 				int i, j;
+				Matrix heightmap = model.toHeightmap(*it);
 				machiningSequence.push_back(*it);
 
 				//converting heightmap to graph and regionmap for toolpath generation
