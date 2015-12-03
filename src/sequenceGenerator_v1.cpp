@@ -79,7 +79,7 @@ list<string> generateSequence(VolumetricModel &model){
 }
 
 //generate toolpath for sequence 
-pair<list<string>, list<string> > toolpathGeneratorForSequence(list<string> sequence, VolumetricModel &model, int TOOL_DIA, int lMax, int bMax, int hMax, string folderName, bool printVolume){
+pair<list<string>, list<string> > toolpathGeneratorForSequence(list<string> sequence, VolumetricModel &model, int TOOL_DIA, int lMax, int bMax, int hMax, string folderName, bool printVolume, int feedrate, int depthPerPass){
 	
 
 	//iterator to access sequence of orientation 
@@ -115,15 +115,15 @@ pair<list<string>, list<string> > toolpathGeneratorForSequence(list<string> sequ
 				string toolpath;// = toToolpath(model, *it, graph, regionmap, safeHeight, maxHeight, TOOL_DIA);
 				if(*it == "xy+" || *it == "xy-"){
 					int safeHeight = hMax +2;
-					toolpath = toToolpath(model, *it, graph, regionmap, safeHeight, hMax, TOOL_DIA);
+					toolpath = toToolpath(model, *it, graph, regionmap, safeHeight, hMax, TOOL_DIA, depthPerPass, feedrate);
 				}
 				else if(*it == "yz+" || *it == "yz-"){
 					int safeHeight = lMax +2;
-					toolpath = toToolpath(model, *it, graph, regionmap, safeHeight, lMax, TOOL_DIA);	
+					toolpath = toToolpath(model, *it, graph, regionmap, safeHeight, lMax, TOOL_DIA, depthPerPass, feedrate);	
 				}
 				else if(*it == "xz+" || *it == "xz-"){
 					int safeHeight = bMax +2;
-					toolpath = toToolpath(model, *it, graph, regionmap, safeHeight, bMax, TOOL_DIA);		
+					toolpath = toToolpath(model, *it, graph, regionmap, safeHeight, bMax, TOOL_DIA, depthPerPass, feedrate);		
 				}	
 
 				toolpaths.push_back(toolpath);
@@ -161,10 +161,13 @@ int main(int argc, char *argv[]){
 	cin>>lMax>>bMax>>hMax; 
 	string folderName = static_cast<string>(argv[1]);
 
+
 	//data model for storing voxels 
 	vector<vector<vector<int> > > voxels(lMax, vector<vector<int> >(bMax, vector<int>(hMax, false)));
 	char boolVal; 
 	int TOOL_DIA = 3;
+	int feedrate = 500;
+	int depthPerPass=3;
 
 	//taking voxel input  
 	for(hIter = 0; hIter<hMax; hIter++){
@@ -187,9 +190,8 @@ int main(int argc, char *argv[]){
 	list<string>::iterator it;
 
 	
-	
 	//generating toolpath for the optimal sequence thats produced by sequence generator 
-	pair<list<string>, list<string> > skk = toolpathGeneratorForSequence(sequence, model, TOOL_DIA,lMax,bMax, hMax,folderName, false);
+	pair<list<string>, list<string> > skk = toolpathGeneratorForSequence(sequence, model, TOOL_DIA,lMax,bMax, hMax,folderName, false, feedrate, depthPerPass);
 	list<string> sk = skk.second;
 	sequence = skk.first;
 
@@ -204,6 +206,7 @@ int main(int argc, char *argv[]){
  		ofstream myfile;
  		myfile.open ("./" + folderName + "/" + *itt + ".gcode" );
  		myfile<<*it;
+ 		myfile<<"my modification";
  		itt++;
  		myfile.close();
  	}

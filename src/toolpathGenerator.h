@@ -574,7 +574,7 @@ bool callItMagic(VolumetricModel &model, int i, int j, int dep, string orientati
 }
 
 //machines connected regions 
-string machine(VolumetricModel &model, string orientation, AdjList vlist, Matrix regionmap, int depth, int noOfRegion, int regionCurrentHeight, int safeHeight, int maxHeight, int TOOL_DIA){
+string machine(VolumetricModel &model, string orientation, AdjList vlist, Matrix regionmap, int depth, int noOfRegion, int regionCurrentHeight, int safeHeight, int maxHeight, int TOOL_DIA, int depthPerPass){
 	int dep, i, j, iprev=0, jprev=0,  m = regionmap.size(), n = regionmap[0].size();
 	string toolpath = "G0 ";
 	int delta = safeHeight - maxHeight;
@@ -591,7 +591,7 @@ string machine(VolumetricModel &model, string orientation, AdjList vlist, Matrix
 	}
 
 	
-	for(dep = 0; dep<depth; dep++){
+	for(dep = 0; dep<depth; dep+=depthPerPass){
 		//toolpath += "G1 Z" + to_string(safeHeight-dep) + "\n";
 		
 		if(dep%2 == 0){
@@ -718,9 +718,9 @@ void processGraph(Graph &graph , AdjList &vlist, int depth){
 }
 
 //converts graph to toolpath using connected component and zigzag path generation strategy
-string toToolpath(VolumetricModel &model, string orientation, Graph &graph, Matrix &regionmap,int safeHeight, int maxHeight, int TOOL_DIA){
+string toToolpath(VolumetricModel &model, string orientation, Graph &graph, Matrix &regionmap,int safeHeight, int maxHeight, int TOOL_DIA, int depthPerPass, int feedrate){
 	//string toolpath = "G21\nG90\nG92 X0 Y0 Z" + to_string(maxHeight) + "\n";
-	string toolpath = "G21\nG90\n" ;
+	string toolpath = "G21\nG90\nF" + to_string(feedrate) + "\n" ;
 	int u;
 	int i;
 	int noOfRegion = graph.size();
@@ -739,7 +739,7 @@ string toToolpath(VolumetricModel &model, string orientation, Graph &graph, Matr
 
 		AdjList vlist = connected(graph, u);
 
-		toolpath += machine(model, orientation, vlist, regionmap, graph[u].first, noOfRegion, regionCurrentHeights[u],safeHeight,  maxHeight, TOOL_DIA);
+		toolpath += machine(model, orientation, vlist, regionmap, graph[u].first, noOfRegion, regionCurrentHeights[u],safeHeight,  maxHeight, TOOL_DIA, depthPerPass);
 
 		AdjList::iterator it;
 		for(it = vlist.begin(); it!= vlist.end(); it++){
