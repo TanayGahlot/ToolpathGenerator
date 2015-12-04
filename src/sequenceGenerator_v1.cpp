@@ -91,16 +91,17 @@ pair<list<string>, list<string> > toolpathGeneratorForSequence(list<string> sequ
 
 	for(it = sequence.begin(); it != sequence.end(); it++){
 					//printing the model for debugging purpose 
-			if(printVolume){
-				ofstream myfile;
-		 		myfile.open ("./" + folderName + "/" + *it + ".interim.raw", ios::binary );
-		 		model.print(myfile);
-		 		// const char *voxelsStream = voxels.c_str();
-		 		// myfile.write(voxelsStream, lMax*hMax*bMax);
-			}
+			
 			//converting the model to heightmap in a given orientation 
 			int machinedVolume = model.calculateMachinableVolume(*it);
 			if(machinedVolume != 0){
+				if(printVolume){
+					ofstream myfile;
+			 		myfile.open ("./" + folderName + "/" + *it + ".interim.raw", ios::binary );
+			 		model.print(myfile);
+			 		// const char *voxelsStream = voxels.c_str();
+			 		// myfile.write(voxelsStream, lMax*hMax*bMax);
+				}
 				int i, j;
 				Matrix heightmap = model.toHeightmap(*it);
 				machiningSequence.push_back(*it);
@@ -165,9 +166,10 @@ int main(int argc, char *argv[]){
 	//data model for storing voxels 
 	vector<vector<vector<int> > > voxels(lMax, vector<vector<int> >(bMax, vector<int>(hMax, false)));
 	char boolVal; 
-	int TOOL_DIA = 3;
+	int TOOL_DIA = 1;
 	int feedrate = 500;
 	int depthPerPass=3;
+	bool printVolume = false;
 
 	//taking voxel input  
 	for(hIter = 0; hIter<hMax; hIter++){
@@ -191,7 +193,7 @@ int main(int argc, char *argv[]){
 
 	
 	//generating toolpath for the optimal sequence thats produced by sequence generator 
-	pair<list<string>, list<string> > skk = toolpathGeneratorForSequence(sequence, model, TOOL_DIA,lMax,bMax, hMax,folderName, false, feedrate, depthPerPass);
+	pair<list<string>, list<string> > skk = toolpathGeneratorForSequence(sequence, model, TOOL_DIA,lMax,bMax, hMax,folderName, printVolume, feedrate, depthPerPass);
 	list<string> sk = skk.second;
 	sequence = skk.first;
 
@@ -206,7 +208,6 @@ int main(int argc, char *argv[]){
  		ofstream myfile;
  		myfile.open ("./" + folderName + "/" + *itt + ".gcode" );
  		myfile<<*it;
- 		myfile<<"my modification";
  		itt++;
  		myfile.close();
  	}

@@ -6,7 +6,7 @@
 import os 
 import subprocess as sp
 
-NoOfTestCases = 2
+NoOfTestCases = 7
 
 # fob = open("./testcases/voxel/case_1.txt")
 # text = fob.read();
