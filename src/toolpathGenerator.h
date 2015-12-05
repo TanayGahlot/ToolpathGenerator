@@ -225,7 +225,7 @@ public:
 				for(y=ymin; y<=ymax; y++){
 					for(z=zmin; z<=zmax; z++){
 						if(space[x][y][z] == true){
-							heightmap[x][y] = zmax - z +1;
+							heightmap[x][ymax-y] = zmax - z +1;
 							break;
 						}
 						
@@ -253,7 +253,7 @@ public:
 				for(z=zmin; z<=zmax; z++){
 					for(x= xmin; x<=xmax; x++){
 						if(space[x][y][z] == true){
-							heightmap[y][z] = xmax + 1 - x;
+							heightmap[ymax -y][z] = xmax + 1 - x;
 							break;	
 						}
 					}		
@@ -279,7 +279,7 @@ public:
 				for(z=zmin; z<=zmax; z++){
 					for(y=ymin; y<=ymax; y++){
 						if(space[x][y][z] == true){
-							heightmap[x][z] = ymax -y +1;
+							heightmap[xmax-x][z] = ymax -y +1;
 							break;		
 						}
 					}
