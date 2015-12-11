@@ -61,11 +61,14 @@ list<string> generateSequence(VolumetricModel &model){
 
 	vector<pair<int, string> > volumes(NOOFORIENTATION);
 	int i;
+	
+
 
 	//generating intital generation of chromosome with six possible degrees of rotation 
 	for(i=0; i<NOOFORIENTATION; i++){
 		volumes[i] = make_pair(model.calculateMachinableVolume(ORIENTATION[i]), ORIENTATION[i]);
 	}
+
 	sort(volumes.begin(), volumes.end(), compareVolume );
 
 	list<string> optimalSet;
@@ -79,22 +82,26 @@ list<string> generateSequence(VolumetricModel &model){
 }
 
 //generate toolpath for sequence 
-pair<list<string>, list<string> > toolpathGeneratorForSequence(list<string> sequence, VolumetricModel &model, int TOOL_DIA, int lMax, int bMax, int hMax, string folderName, bool printVolume, int feedrate, int depthPerPass){
+pair<list<string>, list<string> > toolpathGeneratorForSequence(list<string> sequence, VolumetricModel &model, int TOOL_DIA, int lMax, int bMax, int hMax, string folderName, bool printVolume, int feedrate, int depthPerPass, int toolRadius, int toolLength, long long int objectsVolume){
 	
+	int xmax = model.xmax, ymax = model.ymax, zmax = model.zmax;
 
 	//iterator to access sequence of orientation 
 	list<string>::iterator it;
 
 	list<string> machiningSequence;
 
-	list<string> toolpaths; 
+	list<string> toolpaths;
+
+	int machinedVolume = 0, reachableVolume =0; 
 
 	for(it = sequence.begin(); it != sequence.end(); it++){
-					//printing the model for debugging purpose 
+			//printing the model for debugging purpose 
 			
 			//converting the model to heightmap in a given orientation 
-			int machinedVolume = model.calculateMachinableVolume(*it);
-			if(machinedVolume != 0){
+			int toBeMachinedVolume = model.calculateMachinableVolume(*it);
+			int machinedVolumeInOrientation =0;
+			if(toBeMachinedVolume != 0){
 				if(printVolume){
 					ofstream myfile;
 			 		myfile.open ("./" + folderName + "/" + *it + ".interim.raw", ios::binary );
@@ -102,14 +109,31 @@ pair<list<string>, list<string> > toolpathGeneratorForSequence(list<string> sequ
 			 		// const char *voxelsStream = voxels.c_str();
 			 		// myfile.write(voxelsStream, lMax*hMax*bMax);
 				}
-				int i, j;
+				
 				Matrix heightmap = model.toHeightmap(*it);
 				machiningSequence.push_back(*it);
 
+				// int i, j;
+				// int N=heightmap.size(), M = heightmap[0].size();
+				// for(i=0; i<N; i++){
+				// 	for(j=0; j<M; j++){
+				// 		cout<<heightmap[i][j]<<" ";
+				// 	}
+				// 	cout<<"\n";
+				// }
+				// cout<<"\n";
 				//converting heightmap to graph and regionmap for toolpath generation
-				pair<Graph, Matrix> graphRegionmap = toGraph(heightmap);
+				pair<Graph, Matrix> graphRegionmap = toGraph(heightmap, toolRadius, toolLength);
 				Graph graph = graphRegionmap.first;
 				Matrix regionmap = graphRegionmap.second;
+
+				// for(i=0; i<N; i++){
+				// 	for(j=0; j<M; j++){
+				// 		cout<<heightmap[i][j]<<" ";
+				// 	}
+				// 	cout<<"\n";
+				// }
+				// cout<<"\n";
 
 				//calculating toolpath for the given model and orientation
 				
@@ -130,9 +154,31 @@ pair<list<string>, list<string> > toolpathGeneratorForSequence(list<string> sequ
 				toolpaths.push_back(toolpath);
 
 				//filling machined volume so that it would be outta consideration in next orientation
-				model.fillMachinableVolume(*it);
+				machinedVolumeInOrientation = model.fillMachinableVolume(*it, heightmap);
+				machinedVolume += machinedVolumeInOrientation;
+				reachableVolume += toBeMachinedVolume;
+				//cout<<*it<<":"<<toBeMachinedVolume<<", "<<machinedVolumeInOrientation<<"\n";
 			}
 		
+	}
+	// int x,y,z;
+	// for(x=0; x<=xmax; x++){
+	// 	for(y=0; y<=ymax; y++){
+	// 		for(z=0; z<=zmax; z++){
+	// 			if(model.space[x][y][z] == false)
+	// 				cout<<x<<", "<<y<<", "<<z<<"\n";
+	// 		}
+	// 	}
+	// }
+	if(machinedVolume != ((xmax+1)*(ymax+1)*(zmax+1) - objectsVolume)){
+		cout<<"xmax:"<<xmax<<"\n";
+		cout<<"ymax:"<<ymax<<"\n";
+		cout<<"zmax:"<<zmax<<"\n";
+		cout<<"Volume to be machined:"<<(xmax+1)*(ymax+1)*(zmax+1) - objectsVolume<<"\n";
+		cout<<"Machined Volume: "<< machinedVolume<<"\n";
+		cout<<"Reachable Volume: "<< reachableVolume<<"\n";
+		cout<<"Sorry , the object cannot be machined\n";
+		exit(-1);
 	}
 
 	return make_pair(machiningSequence, toolpaths);
@@ -168,22 +214,28 @@ int main(int argc, char *argv[]){
 	char boolVal; 
 	int TOOL_DIA = 1;
 	int feedrate = 500;
-	int depthPerPass=3;
-	bool printVolume = false;
+	int depthPerPass=1;
+	bool printVolume = true;
+	int toolRadius = 10;
+	int toolLength = 10;
+	long long int objectsVolume=0;
 
 	//taking voxel input  
 	for(hIter = 0; hIter<hMax; hIter++){
 		for(lIter = 0; lIter<lMax; lIter++){
 			for(bIter = 0; bIter<bMax; bIter++){
 				cin>>boolVal;
-				if(boolVal == '1')
+				if(boolVal == '1'){
 					voxels[lIter][bIter][hIter] = true;
-				else
+					objectsVolume += 1;
+				}
+				else{
 					voxels[lIter][bIter][hIter] = false;
+				}
 			}	
 		}
 	}
-
+	//cout<<voxels[25][6][13]<<" *"<<voxels[23][6][13]<<"Yaha dekho!!\n";
 	//internal representation of the model 
 	VolumetricModel model(voxels, lMax, bMax, hMax);
 
@@ -193,7 +245,7 @@ int main(int argc, char *argv[]){
 
 	
 	//generating toolpath for the optimal sequence thats produced by sequence generator 
-	pair<list<string>, list<string> > skk = toolpathGeneratorForSequence(sequence, model, TOOL_DIA,lMax,bMax, hMax,folderName, printVolume, feedrate, depthPerPass);
+	pair<list<string>, list<string> > skk = toolpathGeneratorForSequence(sequence, model, TOOL_DIA,lMax,bMax, hMax,folderName, printVolume, feedrate, depthPerPass, toolRadius, toolLength, objectsVolume);
 	list<string> sk = skk.second;
 	sequence = skk.first;
 
