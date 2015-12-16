@@ -420,7 +420,7 @@ Matrix calculateMachinability(Matrix heightmap, int toolRadius, int toolLength){
 				if(machinable[n][m]){
 					for(y = m - toolRadius; y<= m + toolRadius; y++){
 						//tocheck if the point is valid i.e within boundry of heightmap
-						if(x>=0 && y>=0 && x<N && y<N){
+						if(x>=0 && y>=0 && x<N && y<M){
 							//to check if the point is within circle of interest
 							if((x-n)*(x-n) + (y-m)*(y-m) <= toolRadius*toolRadius){
 								//check if (x,y) satisfy height constraint 
@@ -543,6 +543,7 @@ Matrix makeHeightmapMachinable(Matrix heightmap, int toolRadius, int toolLength)
 		// }
 		// cout<<"\n";
 		while(!Q.empty()){
+
 			pair<int, int > pixel = Q.top(); Q.pop();
 			n = pixel.first;
 			m = pixel.second;
@@ -578,6 +579,19 @@ pair<Graph, Matrix > toGraph(Matrix &heightmap, int toolRadius, int toolLength){
 	heightmap = makeHeightmapMachinable(heightmap, toolRadius, toolLength);
 	globalStack.push(make_pair(0, 0));
 	regionNo = 0;
+
+
+	 // Matrix machinable = calculateMachinability(heightmap, toolRadius, toolLength);
+	 // int n, m;// N = machinable.size(), M = machinable[0].size();
+		// for(n=0; n<N; n++){
+		// 	// cout<<"m ";
+		// 	for(m=0; m<M; m++){
+				
+		// 			cout<<machinable[n][m]<<" ";
+		// 	}
+		// 	cout<<"\n";
+		// }
+		// cout<<"\n";
 
 	while(!globalStack.empty()){
 		pr = globalStack.top(); globalStack.pop();
@@ -708,6 +722,7 @@ void endCut(bool &cutting, BoolDict &isInList, Matrix &regionmap, string &toolpa
 
 //call it magic...
 bool callItMagic(VolumetricModel &model, int i, int j, int dep, string orientation, int safeHeight, int delta){
+	//cout<<i<<", "<<j<<","<<dep<<"\n";
 	if(orientation ==  "xy+"){
 		if(model.space[i][j][safeHeight-delta-dep-1] == 2)
 			return false;
@@ -765,7 +780,7 @@ string machine(VolumetricModel &model, string orientation, AdjList vlist, Matrix
 	}
 
 	
-	for(dep = 0; dep<=depth; dep+=depthPerPass){
+	for(dep = 0; dep<depth; dep+=depthPerPass){
 		//toolpath += "G1 Z" + to_string(safeHeight-dep) + "\n";
 		
 		if(dep%2 == 0){

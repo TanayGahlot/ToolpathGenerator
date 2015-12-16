@@ -93,15 +93,62 @@ pair<list<string>, list<string> > toolpathGeneratorForSequence(list<string> sequ
 
 	list<string> toolpaths;
 
-	int machinedVolume = 0, reachableVolume =0; 
-
+	int machinedVolume=0; 
+	
+		
+		
 	for(it = sequence.begin(); it != sequence.end(); it++){
-			//printing the model for debugging purpose 
+		//printing the model for debugging purpose 
+		//converting the model to heightmap in a given orientation 
+		// cout<<*it<<"\n";
+		int toBeMachinedVolume = model.calculateMachinableVolume(*it);
+		int machinedVolumeInOrientation =0;
+		if(toBeMachinedVolume != 0){
+			Matrix heightmap = model.toHeightmap(*it);
+			// cout<<*it<<"\n";
+			int i, j;
+			int N=heightmap.size(), M = heightmap[0].size();
+			// for(i=0; i<N; i++){
+			// 	for(j=0; j<M; j++){
+			// 		cout<<heightmap[i][j]<<" ";
+			// 	}
+			// 	cout<<"\n";
+			// }
+			// cout<<"\n";
+			//converting heightmap to graph and regionmap for toolpath generation
+			pair<Graph, Matrix> graphRegionmap = toGraph(heightmap, toolRadius, toolLength);
+			Graph graph = graphRegionmap.first;
+			Matrix regionmap = graphRegionmap.second;
+
+			// for(i=0; i<N; i++){
+			// 	cout<<"m";
+			// 	for(j=0; j<M; j++){
+			// 		cout<<heightmap[i][j]<<" ";
+			// 	}
+			// 	cout<<"\n";
+			// }
+			// cout<<"\n";
+
+			//calculating toolpath for the given model and orientation
 			
-			//converting the model to heightmap in a given orientation 
-			int toBeMachinedVolume = model.calculateMachinableVolume(*it);
-			int machinedVolumeInOrientation =0;
-			if(toBeMachinedVolume != 0){
+			string toolpath;// = toToolpath(model, *it, graph, regionmap, safeHeight, maxHeight, TOOL_DIA);
+			if(*it == "xy+" || *it == "xy-"){
+				int safeHeight = hMax +2;
+				toolpath = toToolpath(model, *it, graph, regionmap, safeHeight, hMax, TOOL_DIA, depthPerPass, feedrate);
+			}
+			else if(*it == "yz+" || *it == "yz-"){
+				int safeHeight = lMax +2;
+				toolpath = toToolpath(model, *it, graph, regionmap, safeHeight, lMax, TOOL_DIA, depthPerPass, feedrate);	
+			}
+			else if(*it == "xz+" || *it == "xz-"){
+				int safeHeight = bMax +2;
+				toolpath = toToolpath(model, *it, graph, regionmap, safeHeight, bMax, TOOL_DIA, depthPerPass, feedrate);		
+			}	
+			toolpaths.push_back(toolpath);
+
+			//filling machined volume so that it would be outta consideration in next orientation
+			machinedVolumeInOrientation = model.fillMachinableVolume(*it, heightmap);
+			if(machinedVolumeInOrientation){
 				if(printVolume){
 					ofstream myfile;
 			 		myfile.open ("./" + folderName + "/" + *it + ".interim.raw", ios::binary );
@@ -109,58 +156,24 @@ pair<list<string>, list<string> > toolpathGeneratorForSequence(list<string> sequ
 			 		// const char *voxelsStream = voxels.c_str();
 			 		// myfile.write(voxelsStream, lMax*hMax*bMax);
 				}
-				
-				Matrix heightmap = model.toHeightmap(*it);
 				machiningSequence.push_back(*it);
-
-				// int i, j;
-				// int N=heightmap.size(), M = heightmap[0].size();
-				// for(i=0; i<N; i++){
-				// 	for(j=0; j<M; j++){
-				// 		cout<<heightmap[i][j]<<" ";
-				// 	}
-				// 	cout<<"\n";
-				// }
-				// cout<<"\n";
-				//converting heightmap to graph and regionmap for toolpath generation
-				pair<Graph, Matrix> graphRegionmap = toGraph(heightmap, toolRadius, toolLength);
-				Graph graph = graphRegionmap.first;
-				Matrix regionmap = graphRegionmap.second;
-
-				// for(i=0; i<N; i++){
-				// 	for(j=0; j<M; j++){
-				// 		cout<<heightmap[i][j]<<" ";
-				// 	}
-				// 	cout<<"\n";
-				// }
-				// cout<<"\n";
-
-				//calculating toolpath for the given model and orientation
-				
-				string toolpath;// = toToolpath(model, *it, graph, regionmap, safeHeight, maxHeight, TOOL_DIA);
-				if(*it == "xy+" || *it == "xy-"){
-					int safeHeight = hMax +2;
-					toolpath = toToolpath(model, *it, graph, regionmap, safeHeight, hMax, TOOL_DIA, depthPerPass, feedrate);
-				}
-				else if(*it == "yz+" || *it == "yz-"){
-					int safeHeight = lMax +2;
-					toolpath = toToolpath(model, *it, graph, regionmap, safeHeight, lMax, TOOL_DIA, depthPerPass, feedrate);	
-				}
-				else if(*it == "xz+" || *it == "xz-"){
-					int safeHeight = bMax +2;
-					toolpath = toToolpath(model, *it, graph, regionmap, safeHeight, bMax, TOOL_DIA, depthPerPass, feedrate);		
-				}	
-
-				toolpaths.push_back(toolpath);
-
-				//filling machined volume so that it would be outta consideration in next orientation
-				machinedVolumeInOrientation = model.fillMachinableVolume(*it, heightmap);
-				machinedVolume += machinedVolumeInOrientation;
-				reachableVolume += toBeMachinedVolume;
-				//cout<<*it<<":"<<toBeMachinedVolume<<", "<<machinedVolumeInOrientation<<"\n";
 			}
-		
+
+			machinedVolume += machinedVolumeInOrientation;
+			// cout<<*it<<":"<<toBeMachinedVolume<<", "<<machinedVolumeInOrientation<<"\n";
+		}		
 	}
+	if(machinedVolume != ((xmax+1)*(ymax+1)*(zmax+1) - objectsVolume)){
+	cout<<"xmax:"<<xmax<<"\n";
+	cout<<"ymax:"<<ymax<<"\n";
+	cout<<"zmax:"<<zmax<<"\n";
+	cout<<"Volume to be machined:"<<(xmax+1)*(ymax+1)*(zmax+1) - objectsVolume<<"\n";
+	cout<<"Machined Volume: "<< machinedVolume<<"\n";
+	cout<<"Sorry , the object cannot be machined\n";
+	//exit(-1);
+	}
+
+	
 	// int x,y,z;
 	// for(x=0; x<=xmax; x++){
 	// 	for(y=0; y<=ymax; y++){
@@ -170,16 +183,7 @@ pair<list<string>, list<string> > toolpathGeneratorForSequence(list<string> sequ
 	// 		}
 	// 	}
 	// }
-	if(machinedVolume != ((xmax+1)*(ymax+1)*(zmax+1) - objectsVolume)){
-		cout<<"xmax:"<<xmax<<"\n";
-		cout<<"ymax:"<<ymax<<"\n";
-		cout<<"zmax:"<<zmax<<"\n";
-		cout<<"Volume to be machined:"<<(xmax+1)*(ymax+1)*(zmax+1) - objectsVolume<<"\n";
-		cout<<"Machined Volume: "<< machinedVolume<<"\n";
-		cout<<"Reachable Volume: "<< reachableVolume<<"\n";
-		cout<<"Sorry , the object cannot be machined\n";
-		exit(-1);
-	}
+	
 
 	return make_pair(machiningSequence, toolpaths);
 }
@@ -217,7 +221,7 @@ int main(int argc, char *argv[]){
 	int depthPerPass=1;
 	bool printVolume = true;
 	int toolRadius = 10;
-	int toolLength = 10;
+	int toolLength = 8;
 	long long int objectsVolume=0;
 
 	//taking voxel input  
@@ -241,6 +245,11 @@ int main(int argc, char *argv[]){
 
 	//generating sequence using genetic algorithm 
 	list<string> sequence = generateSequence(model);
+	// list<string> sequence;
+	// int i;
+	// for(i=0; i<NOOFORIENTATION; i++)
+	// 	sequence.push_back(ORIENTATION[i]);
+
 	list<string>::iterator it;
 
 	
