@@ -30,10 +30,22 @@ To run ToolpathGenerator with voxelizer, compile:
 ###Stand-alone Voxelizer
 Standalone voxelizer gives choice of input and output through parameters:
 
+**Input**
+
+File: input as file address
+
+String: input as ASCII STL string through stdin.
+
+**Output**
+
+JSON: output as JSON
+
+String: output as string of 0s and 1s
+
+Execute Standalone Voxelizer as:
 ```
->./voxelizer case_1.stl > case_1.txt
+>./standalone_voxelizer [input parameter] [output parameter] {input file address if file} [output file address] {< input string if string}
 ```
-This generates voxelized model in output file.
 ##Sequence Generator
 ###Compiling 
 ```
