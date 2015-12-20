@@ -17,7 +17,7 @@ NoOfTestCases = 7
 
 
 #compiling latest version of sequence generator 
-p = sp.Popen(["g++", "../src/sequenceGenerator_v1.cpp", "-o", "sequenceGenerator"])
+p = sp.Popen(["g++", "../src/run_without_voxelizer.cpp", "-o", "run" "-std=c++11" "-g"])
 p.communicate()
 
 #for each case create a folder and run the test cases 
@@ -25,12 +25,12 @@ for i in range(1, NoOfTestCases+1):
 	p = sp.Popen(["mkdir", "Case"+str(i)])
 	p.communicate()
 
-	fob = open("./testcases/voxel/case_" + str(i) + ".txt")
+	fob = open("../test/testcases/voxel/case_" + str(i) + ".txt")
 	text = fob.read()
 
 	print "-------Case" + str(i) + ":"
 	print "Runtime: "
-	p = sp.Popen(["time" ,"./sequenceGenerator", "Case" + str(i)], stdin= sp.PIPE, stdout=sp.PIPE)
+	p = sp.Popen(["time" ,"./run", "Case" + str(i)], stdin= sp.PIPE, stdout=sp.PIPE)
 	p.communicate(input = text)
 	print "Machining Time:"
 	fob = open("./Case" + str(i) +"/sequence.txt")

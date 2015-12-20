@@ -166,7 +166,7 @@ std::vector<vector<vector<int>>> convert_to_voxels(char *stlFile)
 	int bMax = zMax;
 	int hMax = xMax;
 
-	vector<vector<vector<int>>> vox(xMax, vector<vector<int> >(yMax, vector<int>(zMax, false)));
+	vector<vector<vector<int>>> vox(lMax, vector<vector<int> >(bMax, vector<int>(hMax, false)));
 	
 	cvmlcpp::Matrix<int,3u>::iterator iter = voxels.begin();
 	cout<<endl<<"Dimensions : L="<<lMax<<" B="<<hMax<<" H="<<xMax<<endl;

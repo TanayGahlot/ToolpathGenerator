@@ -762,7 +762,7 @@ bool callItMagic(VolumetricModel &model, int i, int j, int dep, string orientati
 	}
 }
 
-#include "contour_tracing.h"
+//#include "contour_tracing.h"
 
 //machines connected regions 
 string machine(VolumetricModel &model, string orientation, AdjList vlist, Matrix regionmap, int depth, int noOfRegion, int regionCurrentHeight, int safeHeight, int maxHeight, int TOOL_DIA, int depthPerPass){

@@ -1,9 +1,9 @@
 #include <iostream>
 #include<vector>
-#include "cvmlcpp/base/Matrix"
-#include "cvmlcpp/volume/Geometry"
-#include "cvmlcpp/volume/VolumeIO"
-#include "cvmlcpp/volume/Voxelizer"
+#include "lib/cvmlcpp/base/Matrix"
+#include "lib/cvmlcpp/volume/Geometry"
+#include "lib/cvmlcpp/volume/VolumeIO"
+#include "lib/cvmlcpp/volume/Voxelizer"
 
 #define TURN_ON_SCALE 0
 #define SCALE_BY 100
