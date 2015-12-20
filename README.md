@@ -46,14 +46,13 @@ Execute Standalone Voxelizer as:
 ```
 >./standalone_voxelizer [input parameter] [output parameter] {input file address if file} [output file address] {< input string if string}
 ```
-##Sequence Generator
-###Compiling 
+###ToolpathGenerator without Voxelizer
+ToolpathGenerator without Voxelizer is run as:
 ```
->g++ -std=c++11 ./src/sequenceGenerator.cpp -o sequenceGenerator
+>./run_without_voxelizer [output location] < [input voxel file]
 ```
-###Running it on test case
+###ToolpathGenerator without Voxelizer
+ToolpathGenerator without Voxelizer is run as:
 ```
->mkdir Case1
->./sequenceGenerator Case1 <test/testcases/voxel/case_1.txt 
+>./run_with_voxelizer [input voxel file] [output location]
 ```
-Results will be stored _Case1_ folder
