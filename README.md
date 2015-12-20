@@ -1,4 +1,4 @@
-# ToolpathGenerator(Beta)
+# ToolpathGenerator v1.0(Beta)
 Automating Toolpath Generation of 3D objects for 3-Axis CNC 
 
 ToolpathGenerator automates toolpath planing process involved in toolpath generation of 3D objects for 3-Axis CNC. This work seeks to reduce the barrier faced by the entry level makers and designers involved in CNC machining. 
@@ -30,17 +30,16 @@ To run ToolpathGenerator with voxelizer, compile:
 ###Stand-alone Voxelizer
 Standalone voxelizer gives choice of input and output through parameters:
 
-**Input**
+####Input
 
-File: input as file address
+"File" :  Input as a file address
 
-String: input as ASCII STL string through stdin.
+"String" : Input as ASCII STL string through stdin
 
-**Output**
+####Output
+"JSON" : Output as JSON
 
-JSON: output as JSON
-
-String: output as string of 0s and 1s
+"String" : Output as string of 0s and 1s
 
 Execute Standalone Voxelizer as:
 ```
