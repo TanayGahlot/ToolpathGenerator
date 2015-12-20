@@ -30,7 +30,7 @@
 #define SAFE_HEIGHT 20
 
 // Sleep time for visualisation
-#define SLEEP_TIME 100
+#define SLEEP_TIME 10
 
 using namespace std;
 
@@ -255,14 +255,14 @@ Point get_seed_point(Point seed_point, vector<vector<int>> &regionMap, vector<ve
 	while(!Q.empty()){
 		currentPoint = Q.front();
 		Q.pop();
-		if(traverseMap[currentPoint.x][currentPoint.y] != 1){
+		if(traverseMap[currentPoint.x][currentPoint.y] != 1 && regionMap[currentPoint.x][currentPoint.y] == 0){
 			return currentPoint;
 		}
 		for(int i=-1; i<=1; i++)
 			for(int j=-1;j<=1;j++){
 				if(i != 0 || j != 0){
 					if(exists(currentPoint.x+i, currentPoint.y+j, regionMap) 
-								&& regionMap[currentPoint.x+i][currentPoint.y+j] == 0
+								//&& regionMap[currentPoint.x+i][currentPoint.y+j] == 0
 								&& QMap[currentPoint.x+i][currentPoint.y+j] != 1){
 							Q.push(Point(currentPoint.x+i, currentPoint.y+j));
 							QMap[currentPoint.x+i][currentPoint.y+j] = 1;
@@ -377,9 +377,11 @@ string generate_2D_contours(vector<vector<int>> &regionMap, ToolSpecs &tool, int
 		prev_point = point;
 
 	// code for gcode generation
-	gcode = gcode + write_gcode("raise",0,0,tool.safeHeight);
-	gcode = gcode + write_gcode("move",point.x,point.y,0);
-	gcode = gcode + write_gcode("raise",0,0,depth);
+	if(!st_point.isNull()){
+		gcode = gcode + write_gcode("raise",0,0,tool.safeHeight);
+		gcode = gcode + write_gcode("move",point.x,point.y,0);
+		gcode = gcode + write_gcode("raise",0,0,depth);
+	}
 
 	// This only happens when no point remains to be carved in the region.
 	while(!st_point.isNull()){
@@ -469,7 +471,7 @@ string get_3D_contours(VolumetricModel &model, string orientation, vector<vector
 		
 		//cout<<"\n"<<hMin<<" "<<hMax<<" "<<h;
 		
-		write_gcode("raise", 0, 0, h-hMax);
+		
 		//To be implemeted: generate modified regionMap based on isInList and ether map.
 		modifiedRegionMap = get_modified_regionMap(model, orientation, regionMap, isInList, tool, hMax-h, delta);
 		
