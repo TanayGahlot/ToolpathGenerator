@@ -762,7 +762,7 @@ bool callItMagic(VolumetricModel &model, int i, int j, int dep, string orientati
 	}
 }
 
-//#include "contour_tracing.h"
+#include "contour_tracing.h"
 
 //machines connected regions 
 string machine(VolumetricModel &model, string orientation, AdjList vlist, Matrix regionmap, int depth, int noOfRegion, int regionCurrentHeight, int safeHeight, int maxHeight, int TOOL_DIA, int depthPerPass){
@@ -933,8 +933,8 @@ string toToolpath(VolumetricModel &model, string orientation, Graph &graph, Matr
 		u = pickMin(graph);
 
 		AdjList vlist = connected(graph, u);
-		//toolpath += generate_toolpath_with_compatibility(model, orientation, vlist, regionmap, graph[u].first, noOfRegion, regionCurrentHeights[u],safeHeight,  maxHeight, heightMap, TOOL_DIA, depthPerPass);
-		toolpath += machine(model, orientation, vlist, regionmap, graph[u].first, noOfRegion, regionCurrentHeights[u],safeHeight,  maxHeight, TOOL_DIA, depthPerPass);
+		toolpath += generate_toolpath_with_compatibility(model, orientation, vlist, regionmap, graph[u].first, noOfRegion, regionCurrentHeights[u],safeHeight,  maxHeight, heightMap, TOOL_DIA, depthPerPass);
+		//toolpath += machine(model, orientation, vlist, regionmap, graph[u].first, noOfRegion, regionCurrentHeights[u],safeHeight,  maxHeight, TOOL_DIA, depthPerPass);
 
 		AdjList::iterator it;
 		for(it = vlist.begin(); it!= vlist.end(); it++){
