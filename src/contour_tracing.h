@@ -2,8 +2,12 @@
 	This file deals about the contour generation strategy for Toolpath generation.
 	The tool basically traces the boundary of the uncarved region methodically.
 	
-	Things to be implemented: Contours for 3D, Integrating this file with source.(This looks like a hell of a job right now!). 
-	Once merged, also consider replacing vector<vector<int>> with Matrix class in the source. But for that, source needs to be cleaned first to avoid incomatibilities in header files.
+	Things to be implemented: 
+		[x] Contours for 3D
+		[x] Integrating this file with source.(This looks like a hell of a job right now!).
+		[ ] Clean the code
+		[ ] Rerouting tool for efficiency in cutting.
+		[ ]Once merged, also consider replacing vector<vector<int>> with Matrix class in the source. But for that, source needs to be cleaned first to avoid incomatibilities in header files.
 
 	And ya...screw you callItMagic!
 	
@@ -25,9 +29,6 @@
 #include <deque>
 #include <list>
 #include <queue>
-
-// The safe height is to be taken from the source eventually. For now this macro works as a stub.
-#define SAFE_HEIGHT 20
 
 // Sleep time for visualisation
 #define SLEEP_TIME 10
@@ -110,7 +111,7 @@ bool exists(int x, int y, vector<vector<int>> &regionMap){
 }
 
 
-// Utility function to calculate slope. Basically returns an arctan value since real slope value can be infinity practically.
+// Utility function to calculate slope. Basically returns an arctan value since real slope value can be infinity practically. Also will help if gradiet approach is thought of in future.
 float calculate_slope(Point p1, Point p2){
 	return atan(float(p2.y - p1.y)/(p2.x - p1.x));
 }
@@ -133,6 +134,8 @@ void display(vector<vector<int>> &regionMap, vector<vector<int>> &traverseMap){
 }
 
 
+//Obselete functions. These value are now directly taken from source. Retained for future reference.
+/*
 // Gets highest value from height map. Can be replaced with equivalent function from source.
 int get_highest_value(vector<vector<int>> &heightMap){
 	int high = heightMap[0][0];
@@ -159,7 +162,7 @@ int get_lowest_value(vector<vector<int>> &heightMap){
 	}
 	return low;
 }
-
+*/
 
 // Utility function to generate gcode to clean up the code.
 // Currently implements "move": "G0", "cut": "G1" and "raise": "G1 Z"
@@ -179,7 +182,7 @@ string write_gcode(string action, int x=0, int y=0, int z=0){
 
 /******************************************Higher Utility Functions******************************************/
 
-// Combines all the checks so higher abstract functions can call assle free single function. Though the arguments are screwed up because of screwed up callItMagic function.
+// Combines all the checks so higher abstract functions can call hassle free single function.
 bool check_feasibility(Point P, vector<vector<int>> regionMap, vector<vector<int>> traverseMap){
 
 	if(exists(P.x, P.y, regionMap) && regionMap[P.x][P.y] == 0 && traverseMap[P.x][P.y] == 0){
@@ -228,6 +231,7 @@ void visualise(vector<vector<int>> &regionMap, vector<vector<int>> &traverseMap)
 
 
 // This function scan the entire region map to find the first point it encounters as a starting point for contour generation algorithm.
+// [ ] This is likely function for improvement. can take seed point in last depth to get new point in next depth usng bfs
 Point get_start_point(vector<vector<int>> &regionMap, vector<vector<int>> &traverseMap){
 	
 	for(int i=0; i<regionMap[0].size(); i++){
@@ -248,13 +252,14 @@ Point get_seed_point(Point seed_point, vector<vector<int>> &regionMap, vector<ve
 	Point currentPoint;
 	std::queue<Point> Q;
 	Q.push(seed_point);
-	//seed_point.display(); cout<<"\n";
+	
 	// QMap is a data structure to barr already considered point to be entering again in the queue.
 	vector<vector<int>> QMap(regionMap.size(), vector<int>(regionMap[0].size(), 0)); 
 
 	while(!Q.empty()){
 		currentPoint = Q.front();
 		Q.pop();
+		// The second condition was incorporated for rare case of regions divided into various chunks on region map.
 		if(traverseMap[currentPoint.x][currentPoint.y] != 1 && regionMap[currentPoint.x][currentPoint.y] == 0){
 			return currentPoint;
 		}
@@ -262,7 +267,6 @@ Point get_seed_point(Point seed_point, vector<vector<int>> &regionMap, vector<ve
 			for(int j=-1;j<=1;j++){
 				if(i != 0 || j != 0){
 					if(exists(currentPoint.x+i, currentPoint.y+j, regionMap) 
-								//&& regionMap[currentPoint.x+i][currentPoint.y+j] == 0
 								&& QMap[currentPoint.x+i][currentPoint.y+j] != 1){
 							Q.push(Point(currentPoint.x+i, currentPoint.y+j));
 							QMap[currentPoint.x+i][currentPoint.y+j] = 1;
@@ -278,6 +282,7 @@ Point get_seed_point(Point seed_point, vector<vector<int>> &regionMap, vector<ve
 /******************************************Lookup Functions******************************************/
 
 // This function handles complexity of special case. It resolves a bug in which a point is surrounded by boundaries on all sides and hence tool cannot move further. It sets certain rules in the locality of point in such cases to know in which case it fits. Then decides on the next point to be considered. Does not tell if the point exists or not.
+// [ ] Needs to also incorporate what happens if point is surrounded by traversed point. For now tool just relocates itself by means of get_seed_point function
 Point escape_from_closed_region(Point p, vector<vector<int>> &regionMap, vector<vector<int>> &traverseMap){
 	
 	int currentRegion = regionMap[p.x][p.y];
@@ -365,8 +370,6 @@ string generate_2D_contours(vector<vector<int>> &regionMap, ToolSpecs &tool, int
 
 	vector<vector<int>> traverseMap(regionMap.size(), vector<int>(regionMap[0].size(), 0));
 	
-	// This is done in case required in future. This loop goes until sequence of regions is exhausted. Currently only takes matrix of 0s ad 1s so this loop only runs once.
-	
 	Point st_point = get_start_point(regionMap, traverseMap);
 	Point point = st_point;
 
@@ -376,7 +379,7 @@ string generate_2D_contours(vector<vector<int>> &regionMap, ToolSpecs &tool, int
 	else
 		prev_point = point;
 
-	// code for gcode generation
+	// code for gcode generation only if point exists to start with in first place. otherwise tool just fools around randomly at constant x y positions at different depths
 	if(!st_point.isNull()){
 		gcode = gcode + write_gcode("raise",0,0,tool.safeHeight);
 		gcode = gcode + write_gcode("move",point.x,point.y,0);
@@ -389,8 +392,8 @@ string generate_2D_contours(vector<vector<int>> &regionMap, ToolSpecs &tool, int
 		traverseMap[point.x][point.y] = 1;
 			
 		
-			// Uncomment this for contour visualisation
-			//visualise(regionMap, traverseMap);
+		// Uncomment this for contour visualisation
+		//visualise(regionMap, traverseMap);
 		
 
 		// Fetch new point based on known facts
@@ -435,6 +438,7 @@ string generate_2D_contours(vector<vector<int>> &regionMap, ToolSpecs &tool, int
 
 /******************************************Highest Abstraction Functions******************************************/
 
+// Generates modified height map by considering current position in region graph, ether(#callItMagic) and regionMap. One of the biggest inefficiencies in code. Needs to be taken care in future.
 vector<vector<int>> get_modified_regionMap(VolumetricModel &model, string orientation, vector<vector<int>> regionMap, BoolDict isInList, ToolSpecs &tool, int depth, int delta){
 
 	vector<vector<int>> modifiedRegionMap(regionMap.size(), vector<int>(regionMap[0].size(), 0));
@@ -467,15 +471,10 @@ string get_3D_contours(VolumetricModel &model, string orientation, vector<vector
 	string gcode = "";
 	
 	for(int h = hMax; h>hMin; h--){
-		// raise the tool to height
 		
-		//cout<<"\n"<<hMin<<" "<<hMax<<" "<<h;
-		
-		
-		//To be implemeted: generate modified regionMap based on isInList and ether map.
+		//Generates modified regionMap based on isInList and ether map.
 		modifiedRegionMap = get_modified_regionMap(model, orientation, regionMap, isInList, tool, hMax-h, delta);
 		
-		// Later this function also has to consider the ether, so one more arguement expected
 		gcode = gcode + generate_2D_contours(modifiedRegionMap, tool, h-hMax);
 	}
 	return gcode;
