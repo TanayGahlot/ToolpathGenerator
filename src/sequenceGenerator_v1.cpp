@@ -120,28 +120,28 @@ pair<list<string>, list<string> > toolpathGeneratorForSequence(list<string> sequ
 			Graph graph = graphRegionmap.first;
 			Matrix regionmap = graphRegionmap.second;
 
-			// for(i=0; i<N; i++){
-			// 	cout<<"m";
-			// 	for(j=0; j<M; j++){
-			// 		cout<<heightmap[i][j]<<" ";
-			// 	}
-			// 	cout<<"\n";
-			// }
-			// cout<<"\n";
+			for(i=0; i<N; i++){
+				// cout<<"m";
+				for(j=0; j<M; j++){
+					cout<<regionmap[i][j]<<" ";
+				}
+				cout<<"\n";
+			}
+			cout<<"\n";
 
 			//calculating toolpath for the given model and orientation
 			
 			string toolpath;// = toToolpath(model, *it, graph, regionmap, safeHeight, maxHeight, TOOL_DIA);
+			int safeHeight = 2;
 			if(*it == "xy+" || *it == "xy-"){
-				int safeHeight = hMax +2;
 				toolpath = toToolpath(model, *it, graph, regionmap, safeHeight, hMax, TOOL_DIA, depthPerPass, feedrate);
 			}
 			else if(*it == "yz+" || *it == "yz-"){
-				int safeHeight = lMax +2;
+				// int safeHeight = 2;
 				toolpath = toToolpath(model, *it, graph, regionmap, safeHeight, lMax, TOOL_DIA, depthPerPass, feedrate);	
 			}
 			else if(*it == "xz+" || *it == "xz-"){
-				int safeHeight = bMax +2;
+				// int safeHeight = 2;
 				toolpath = toToolpath(model, *it, graph, regionmap, safeHeight, bMax, TOOL_DIA, depthPerPass, feedrate);		
 			}	
 			toolpaths.push_back(toolpath);
@@ -221,7 +221,7 @@ int main(int argc, char *argv[]){
 	int depthPerPass=1;
 	bool printVolume = true;
 	int toolRadius = 10;
-	int toolLength = 8;
+	int toolLength = 40;
 	long long int objectsVolume=0;
 
 	//taking voxel input  
@@ -254,7 +254,7 @@ int main(int argc, char *argv[]){
 
 	
 	//generating toolpath for the optimal sequence thats produced by sequence generator 
-	pair<list<string>, list<string> > skk = toolpathGeneratorForSequence(sequence, model, TOOL_DIA,lMax,bMax, hMax,folderName, printVolume, feedrate, depthPerPass, toolRadius, toolLength, objectsVolume);
+	pair<list<string>, list<string> > skk = toolpathGeneratorForSequence(sequence, model, TOOL_DIA, lMax, bMax, hMax, folderName, printVolume, feedrate, depthPerPass, toolRadius, toolLength, objectsVolume);
 	list<string> sk = skk.second;
 	sequence = skk.first;
 

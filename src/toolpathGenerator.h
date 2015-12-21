@@ -21,7 +21,8 @@ typedef map<int , bool> BoolDict;
 typedef stack<int> IntStack;
 typedef map<int, int> IntMap;
 typedef long long int ll;
-
+typedef pair<pair<int, int>, pair<char, char> > SeedPoint;
+typedef stack<SeedPoint> SeedStack;
 class VolumetricModel{
 public:
 
@@ -721,158 +722,382 @@ void endCut(bool &cutting, BoolDict &isInList, Matrix &regionmap, string &toolpa
 }
 
 //call it magic...
-bool callItMagic(VolumetricModel &model, int i, int j, int dep, string orientation, int safeHeight, int delta){
-	//cout<<i<<", "<<j<<","<<dep<<"\n";
+bool doesntHaveEther(VolumetricModel &model, int x, int y, int depth, string orientation, int maxHeight, int regionCurrentHeight){
+	
 	if(orientation ==  "xy+"){
-		if(model.space[i][j][safeHeight-delta-dep-1] == 2)
+		if(model.space[x][y][regionCurrentHeight-depth] == 2)
 			return false;
 		else
 			return true;
 	}
 	else if(orientation == "xy-"){
-		if(model.space[i][j][dep] == 2)
+		if(model.space[x][y][maxHeight- regionCurrentHeight + depth] == 2)
 			return false;
 		else
 			return true;
 	}
 	else if(orientation == "xz+"){
-		if(model.space[i][safeHeight-delta-dep-1][j] == 2)
+		if(model.space[x][regionCurrentHeight-depth-1][y] == 2)
 			return false;
 		else
 			return true;
 	}
 	else if(orientation == "xz-"){
-		if(model.space[i][dep][j] == 2)
+		if(model.space[x][maxHeight- regionCurrentHeight + depth][y] == 2)
 			return false;
 		else
 			return true;
 	}
 	else if(orientation == "yz+"){
 
-		if(model.space[safeHeight-delta-dep-1][i][j] == 2)
+		if(model.space[regionCurrentHeight-depth][x][y] == 2)
 			return false;
 		else
 			return true;
 	}
 	else if(orientation == "yz-"){
-		if(model.space[dep][i][j] == 2)
+		// cout<<orientation<<" "<<maxHeight- regionCurrentHeight + depth<<" "<<x<<", "<<y<<"\n";
+		if(model.space[maxHeight- regionCurrentHeight + depth][x][y] == 2)
 			return false;
 		else
 			return true;
 	}
 }
 
+bool isExplored(map<string, bool> explored, string coordinate){
+	try{
+		explored.at(coordinate);
+		return true;
+	}
+	catch(out_of_range){
+		return false;
+	}
+}
+
+
+
+bool canWeCut(VolumetricModel &model, string orientation, int x, int y, int maxHeight,map<int, bool> isInVlist,  map<string, bool> explored, int regionCurrentHeight, int depth, Matrix regionmap){
+	string coordinate = to_string(x) + "," + to_string(y);
+	int Xmax = regionmap.size() , Ymax = regionmap[0].size();
+	if(y<0 || x<0 || y>=Ymax || x>=Xmax)
+		return false;
+	if(!isExplored(explored, coordinate) && doesntHaveEther(model,  x,  y, depth, orientation, maxHeight, regionCurrentHeight) && isInVlist[regionmap[x][y]])
+		return true;
+	else
+		return false;
+}
+
+SeedPoint getInitialSeedPoint(VolumetricModel &model, string orientation, int Xmax, int Ymax, char xdirection, char ydirection, int maxHeight,map<int, bool> isInVlist , map<string, bool> explored, int regionCurrentHeight, int depth, Matrix regionmap){
+	int x, y; 
+	if(xdirection == '+'){
+		for(x=0; x<Xmax; x++){
+			if(ydirection == '+'){
+				for(y=0; y<Ymax; y++){
+					if(canWeCut(model, orientation, x, y, maxHeight, isInVlist, explored, regionCurrentHeight,  depth, regionmap)){
+						return make_pair(make_pair(x, y), make_pair(xdirection, ydirection));
+					}
+				}	
+			}
+			else if(ydirection == '-'){
+				for(y=Ymax-1; y>=0; y--){
+					if(canWeCut(model, orientation, x, y, maxHeight, isInVlist, explored, regionCurrentHeight,  depth, regionmap)){
+						return make_pair(make_pair(x, y), make_pair(xdirection, ydirection));
+					}
+				}
+			}
+		}
+	}
+	else if(xdirection == '-'){
+		for(x=Xmax-1; x>=0; x--){
+			if(ydirection == '+'){
+				for(y=0; y<Ymax; y++){
+					if(canWeCut(model, orientation, x, y, maxHeight, isInVlist, explored, regionCurrentHeight,  depth, regionmap)){
+						return make_pair(make_pair(x, y), make_pair(xdirection, ydirection));
+					}
+				}	
+			}
+			else if(ydirection == '-'){
+				for(y=Ymax-1; y>=0; y--){
+					if(canWeCut(model, orientation, x, y, maxHeight, isInVlist, explored, regionCurrentHeight,  depth, regionmap)){
+						return make_pair(make_pair(x, y), make_pair(xdirection, ydirection));
+					}
+				}
+			}
+		}
+	}
+
+	return make_pair(make_pair(-1, -1), make_pair('*', '*'));
+}
+
+int findNextPoint(VolumetricModel &model, string orientation, int Xs, int Ys,int Xmax, int Ymax, int maxHeight,map<int, bool> isInVlist, char xdirection, map<string, bool> explored,int regionCurrentHeight, int depth, Matrix regionmap, int TOOL_DIA){
+	int  dy=0;
+	
+	// cout<<"again me \n";
+	
+	if(xdirection == '+'){
+		
+		if(Xs+TOOL_DIA < Xmax){
+			if(canWeCut(model, orientation, Xs+TOOL_DIA, Ys, maxHeight, isInVlist, explored, regionCurrentHeight,  depth, regionmap)){
+				while(Ys+dy<Ymax && Ys-dy>=0){
+					if(!canWeCut(model, orientation, Xs+TOOL_DIA, Ys+dy, maxHeight, isInVlist, explored, regionCurrentHeight,  depth, regionmap))
+						return Ys+dy-1;
+					else if(!canWeCut(model, orientation, Xs+TOOL_DIA, Ys-dy, maxHeight, isInVlist, explored, regionCurrentHeight,  depth, regionmap))
+						return Ys-dy+1;
+					dy+=1;
+				}
+				if(Ys+dy == Ymax)
+					return Ymax-1;
+				else if(Ys-dy < 0)
+					return 0;
+
+			}
+			else{
+				while(Ys+dy<Ymax || Ys-dy>=0){
+					if(canWeCut(model, orientation, Xs+TOOL_DIA, Ys+dy, maxHeight, isInVlist, explored, regionCurrentHeight,  depth, regionmap))
+						return Ys+dy;
+					else if(canWeCut(model, orientation, Xs+TOOL_DIA, Ys-dy, maxHeight, isInVlist, explored, regionCurrentHeight,  depth, regionmap))
+						return Ys-dy;
+					dy+=1;
+				}
+			}
+		}
+	}
+	else{
+		
+		if(Xs - TOOL_DIA >=0){
+			if(canWeCut(model, orientation, Xs+TOOL_DIA, Ys, maxHeight, isInVlist, explored, regionCurrentHeight,  depth, regionmap)){
+				while(Ys+dy<Ymax && Ys-dy>=0){
+					if(!canWeCut(model, orientation, Xs-TOOL_DIA, Ys+dy, maxHeight, isInVlist, explored, regionCurrentHeight,  depth, regionmap))
+						return Ys+dy-1;
+					else if(!canWeCut(model, orientation, Xs-TOOL_DIA, Ys-dy, maxHeight, isInVlist, explored, regionCurrentHeight,  depth, regionmap))
+						return Ys-dy+1;
+					dy+=1;
+				}
+				if(Ys+dy == Ymax)
+					return Ymax-1;
+				else if(Ys-dy < 0)
+					return 0;
+
+			}
+			else{
+				while(Ys+dy<Ymax ||Ys-dy>=0){
+					if(canWeCut(model, orientation, Xs-TOOL_DIA, Ys+dy, maxHeight, isInVlist, explored, regionCurrentHeight,  depth, regionmap))
+						return Ys+dy;
+					else if(canWeCut(model, orientation, Xs-TOOL_DIA, Ys-dy, maxHeight, isInVlist, explored, regionCurrentHeight,  depth, regionmap))
+						return Ys-dy;
+					dy+=1;
+				}
+			}
+		}
+	}
+	
+
+	return -1;
+
+
+}
+
+SeedPoint findMissedSeed(VolumetricModel &model, string orientation, int Xs, int Ys, int maxHeight,map<int, bool> isInVlist , int Ymax,char xdirection, char ydirection, map<string, bool> explored, int regionCurrentHeight, int depth, Matrix regionmap){
+	int y;
+	if(ydirection == '+'){
+		for(y=Ys; y<Ymax; y++){
+			if(canWeCut(model, orientation, Xs, y, maxHeight, isInVlist, explored, regionCurrentHeight,  depth, regionmap)){
+				return make_pair(make_pair(Xs, y), make_pair(xdirection, ydirection));
+			}
+		}
+	}
+	else if(ydirection == '-'){
+		for(y=Ys; y>=0; y--){
+			if(canWeCut(model, orientation, Xs, y, maxHeight, isInVlist, explored, regionCurrentHeight,  depth, regionmap)){
+				return make_pair(make_pair(Xs, y), make_pair(xdirection, ydirection));
+			}
+		}
+	}
+	return make_pair(make_pair(-1, -1), make_pair('*', '*'));
+}
+
 //machines connected regions 
 string machine(VolumetricModel &model, string orientation, AdjList vlist, Matrix regionmap, int depth, int noOfRegion, int regionCurrentHeight, int safeHeight, int maxHeight, int TOOL_DIA, int depthPerPass){
-	int dep, i, j, iprev=0, jprev=0,  m = regionmap.size(), n = regionmap[0].size();
-	string toolpath = "G0 ";
-	int delta = safeHeight - maxHeight;
-	bool cutting;
-	BoolDict isInList;
-	AdjList::iterator it;
+	char xdirection = '+', ydirection = '+';
+	int Xmax = regionmap.size(), Ymax = regionmap[0].size();  
+	int regNo;
+	map<string, bool> dummyExplored;//a hack!
 
-	for(i=1; i<= noOfRegion; i++){
-		it = find(vlist.begin(), vlist.end(), i);
-		if(it != vlist.end())
-			isInList[i] = true;
+	// creating map of regions in region map to their existence in vlist to speed up lookup 
+	map<int, bool> isInVlist;
+	for(regNo = 1; regNo <= noOfRegion; regNo++){
+		AdjList::iterator it = find(vlist.begin(), vlist.end(), regNo);
+		if(it == vlist.end())
+			isInVlist[regNo] = false;
 		else
-			isInList[i] = false;
+			isInVlist[regNo] = true;
 	}
 
-	
-	for(dep = 0; dep<depth; dep+=depthPerPass){
-		//toolpath += "G1 Z" + to_string(safeHeight-dep) + "\n";
-		
-		if(dep%2 == 0){
-			for(i=0; i<m; i+=TOOL_DIA){
-				cutting = false;
-				if((i/TOOL_DIA)%2 == 0){
-					for(j=0; j<n; j++){
-						if(callItMagic(model, i, j, dep, orientation, safeHeight, delta)){
-							writeGcode(cutting, isInList, regionmap, toolpath, safeHeight, regionCurrentHeight, i ,  j, dep, iprev, jprev, delta);
-							iprev = i;jprev =j;
-						}
-						else{
-							if(cutting){
-								toolpath += ("G1 X" + to_string(iprev) + " Y" + to_string(jprev) +"\n"); 
-								toolpath += ("G1 Z2 \n");
-								toolpath += ("G0 ");
-								cutting = false; 
+	// fetching seed point and getting the tool to that region 
+	SeedPoint seedPoint = getInitialSeedPoint(model, orientation, Xmax,  Ymax,  xdirection, ydirection, maxHeight, isInVlist ,  dummyExplored,  regionCurrentHeight, 0, regionmap);
+	SeedPoint missedSeed;
+	int Xs, Ys, d, x, y;
+	Xs = seedPoint.first.first;
+	Ys = seedPoint.first.second;
+
+	string gcode = "G0 X"+ to_string(Xs) + " Y" + to_string(Ys) + "\n";
+
+
+	for(d=0; d<depth; d++){ 
+		map<string, bool> explored;
+		seedPoint = getInitialSeedPoint(model, orientation, Xmax, Ymax, xdirection, ydirection, maxHeight, isInVlist,explored, regionCurrentHeight, d, regionmap );
+		Xs = seedPoint.first.first;
+		Ys = seedPoint.first.second;
+		SeedStack Q;
+		Q.push(seedPoint);cout<<"d------"<<d<<"\n";
+		gcode += "G0 X" + to_string(Xs) + " Y" + to_string(Ys) + "\n";
+		gcode += "G0 Z-"+ to_string(maxHeight - regionCurrentHeight+d) + "\n";
+		while(Q.size() != 0){
+			seedPoint = Q.top();Q.pop();
+			// xdirection = '+';
+			// ydirection = '-';
+			Xs = seedPoint.first.first;
+			Ys = seedPoint.first.second;
+			gcode += "G0 Z"+ to_string(safeHeight) + "\n"; 
+			gcode += "G0 X" + to_string(Xs) + " Y" + to_string(Ys) + "\n";
+			gcode += "G0 Z-"+ to_string(maxHeight - regionCurrentHeight+d) + "\n";
+			
+			// cout<<Xs<<","<<Ys<<","<<d<<"\n";
+			ydirection = seedPoint.second.second;
+			xdirection = seedPoint.second.first;
+			cout<<"("<<Xs<<", "<<Ys<<")"<<ydirection<<"\n";
+			bool cutting = true;
+			if(xdirection == '+'){
+				
+				for(x = Xs; x<Xmax; x+=TOOL_DIA){
+					if(cutting){
+						if(!isExplored(explored , to_string(x) + "," + to_string(Ys))){
+							if(ydirection == '+'){
+								for(y=Ys; y<Ymax; y+=1){
+									if(!canWeCut(model, orientation, x, y, maxHeight, isInVlist, explored, regionCurrentHeight,  depth, regionmap)){
+										
+										break;
+									}
+								}
+								explored[to_string(x) + "," + to_string(Ys)] = true;//cout<<x<<", "<<y-1<<"\n";
+								gcode += "G1 X" + to_string(x) + " Y" + to_string(y-1) + "\n";
+								Ys = findNextPoint(model, orientation, x, y-1,Xmax, Ymax,  maxHeight,isInVlist, xdirection, explored, regionCurrentHeight, d, regionmap,TOOL_DIA);
+								
+								if(Ys<0){
+									
+									cutting = false;
+								}
+								missedSeed = findMissedSeed(model, orientation, x, y, maxHeight,isInVlist , Ymax,xdirection, ydirection, explored, regionCurrentHeight, d, regionmap);
+								if(missedSeed.first.first>=0){
+									Q.push(missedSeed);
+								}
+								explored[to_string(x) + "," + to_string(y-1)] = true;
+								ydirection = '-';
+
 							}
+							else if(ydirection == '-'){
+								
+								for(y=Ys; y>=0; y-=1){
+									if(!canWeCut(model, orientation, x, y, maxHeight, isInVlist, explored, regionCurrentHeight,  depth, regionmap)){
+										
+										break;
+									}
+								}
+								explored[to_string(x) + "," + to_string(Ys)] = true;
+								gcode += "G1 X" + to_string(x) + " Y" + to_string(y+1)+ "\n";
+								Ys = findNextPoint(model, orientation, x, y+1,Xmax, Ymax,  maxHeight,isInVlist, xdirection, explored, regionCurrentHeight, d, regionmap,TOOL_DIA);
+								
+								if(Ys<0){
+									
+									cutting = false;
+								}
+								missedSeed = findMissedSeed(model, orientation, x, y, maxHeight,isInVlist , Ymax,xdirection, ydirection, explored, regionCurrentHeight, d, regionmap);
+								if(missedSeed.first.first>=0){
+									Q.push(missedSeed);
+								}
+								explored[to_string(x) + "," + to_string(y+1)] = true;
+								ydirection = '+';
+							}
+							if(Ys >= 0)
+								gcode += "G1 X" + to_string(x+TOOL_DIA) + " Y" + to_string(Ys) + "\n";
+						}
+					}
+					else{
+						break;
+					}
+					
+				}
+				xdirection = '-';	
+			}
+			else if(xdirection == '-'){
+				
+				for(x = Xs; x>=0; x-=TOOL_DIA){
+					if(cutting){
+						if(!isExplored(explored , to_string(x) + "," + to_string(Ys))){
+							
+							if(ydirection == '+'){
+								
+								for(y=Ys; y<Ymax; y+=1){
+									if(!canWeCut(model, orientation, x, y, maxHeight, isInVlist, explored, regionCurrentHeight,  depth, regionmap)){
+										
+										break;
+									}
+								}
+								explored[to_string(x) + "," + to_string(Ys)] = true;//cout<<x<<", "<<y-1<<"\n";
+								gcode += "G1 X" + to_string(x) + " Y" + to_string(y-1) + "\n";
+								Ys = findNextPoint(model, orientation, x, y-1,Xmax, Ymax,  maxHeight,isInVlist, xdirection, explored, regionCurrentHeight, d, regionmap,TOOL_DIA);
+								
+								if(Ys<0){
+									
+									cutting = false;
+								}
+								missedSeed = findMissedSeed(model, orientation, x, y, maxHeight,isInVlist , Ymax,xdirection, ydirection, explored, regionCurrentHeight, d, regionmap);
+								if(missedSeed.first.first>=0){
+									Q.push(missedSeed);
+								}
+								explored[to_string(x) + "," + to_string(y-1)] = true;
+								ydirection = '-';
+							}
+							else if(ydirection == '-'){
+								
+								for(y=Ys; y>=0; y-=1){
+									if(!canWeCut(model, orientation, x, y, maxHeight, isInVlist, explored, regionCurrentHeight,  depth, regionmap)){
+										
+										
+										break;
+									}
+								}
+								gcode += "G1 X" + to_string(x) + " Y" + to_string(y+1)+ "\n";
+								explored[to_string(x) + "," + to_string(Ys)] = true;//cout<<x<<", "<<y+1<<"\n";
+								Ys = findNextPoint(model, orientation, x, y+1,Xmax, Ymax,  maxHeight,isInVlist, xdirection, explored, regionCurrentHeight, d, regionmap,TOOL_DIA);
+
+								if(Ys<0){
+									
+									cutting = false;
+								}
+								missedSeed = findMissedSeed(model, orientation, x, y, maxHeight,isInVlist , Ymax,xdirection, ydirection, explored, regionCurrentHeight, d, regionmap);
+								if(missedSeed.first.first>=0){
+									Q.push(missedSeed);
+								}
+								explored[to_string(x) + "," + to_string(y+1)] = true;
+								ydirection = '+';
+							}
+							if(Ys>=0)
+								gcode += "G1 X" + to_string(x-TOOL_DIA) + " Y" + to_string(Ys) + "\n";
+							
 						}	
-					}	
-				}
-				else{
-					for(j=n-1; j>=0; j--){
-						if(callItMagic(model, i, j, dep, orientation, safeHeight, delta)){
-							writeGcode(cutting, isInList, regionmap, toolpath, safeHeight, regionCurrentHeight, i ,  j, dep, iprev, jprev, delta);
-							iprev = i;jprev =j;
-						}
-						else{
-							if(cutting){
-								toolpath += ("G1 X" + to_string(iprev) + " Y" + to_string(jprev) +"\n"); 
-								toolpath += ("G1 Z2\n");
-								toolpath += ("G0 ");
-								cutting = false; 
-							}
-						}
-						
+					}
+					else{
+						break;
 					}
 					
 				}
-				if(cutting)
-					endCut(cutting, isInList, regionmap, toolpath, safeHeight, regionCurrentHeight, i ,  j, dep, iprev, jprev);
-			}
-		}
-		else{
-			for(i=m-1; i>=0; i-= TOOL_DIA){
-				cutting = false;
-				if((i/TOOL_DIA)%2 == 0){
-					for(j=0; j<n; j++){
-						if(callItMagic(model, i, j, dep, orientation, safeHeight, delta)){
-							writeGcode(cutting, isInList, regionmap, toolpath, safeHeight, regionCurrentHeight, i ,  j, dep, iprev, jprev, delta);
-							iprev = i;jprev =j;
-						}
-						else{
-							if(cutting){
-								toolpath += ("G1 X" + to_string(iprev) + " Y" + to_string(jprev) +"\n"); 
-								toolpath += ("G1 Z2\n");
-								toolpath += ("G0 ");
-								cutting = false; 
-							}
-						}
-					}
-					
-				}
-				else{
-					for(j=n-1; j>=0; j--){
-						if(callItMagic(model, i, j, dep, orientation, safeHeight, delta)){
-							writeGcode(cutting, isInList, regionmap, toolpath, safeHeight, regionCurrentHeight, i ,  j, dep, iprev, jprev, delta);
-							iprev = i;jprev =j;	
-						}
-						else{
-							if(cutting){
-								toolpath += ("G1 X" + to_string(iprev) + " Y" + to_string(jprev) +"\n"); 
-								toolpath += ("G1 Z2\n");
-								toolpath += ("G0 ");
-								cutting = false; 
-							}
-						}
-					}
-					
-				}
-				if(cutting)
-					endCut(cutting, isInList, regionmap, toolpath, safeHeight, regionCurrentHeight, i ,  j, dep, iprev, jprev);
+				xdirection = '+';
 			}
 		}
 	}
-
-	//quick fix
-	int length = toolpath.size();
-	if(toolpath.substr(length-3, 3) == "G0 ")
-		toolpath = toolpath.substr(0, length-3);
-	toolpath += "G1 Z2\n"; 
-	return toolpath;
+	gcode += "G0 Z"+ to_string(safeHeight) + "\n"; 
+	return gcode;
 }
 
 void displayGraph(Graph &graph){
