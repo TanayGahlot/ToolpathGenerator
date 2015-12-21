@@ -134,8 +134,7 @@ void display(vector<vector<int>> &regionMap, vector<vector<int>> &traverseMap){
 }
 
 
-//Obselete functions. These value are now directly taken from source. Retained for future reference.
-/*
+
 // Gets highest value from height map. Can be replaced with equivalent function from source.
 int get_highest_value(vector<vector<int>> &heightMap){
 	int high = heightMap[0][0];
@@ -162,7 +161,7 @@ int get_lowest_value(vector<vector<int>> &heightMap){
 	}
 	return low;
 }
-*/
+
 
 // Utility function to generate gcode to clean up the code.
 // Currently implements "move": "G0", "cut": "G1" and "raise": "G1 Z"
@@ -229,22 +228,6 @@ void visualise(vector<vector<int>> &regionMap, vector<vector<int>> &traverseMap)
 
 /******************************************Seeding Functions******************************************/
 
-
-// This function scan the entire region map to find the first point it encounters as a starting point for contour generation algorithm.
-// [ ] This is likely function for improvement. can take seed point in last depth to get new point in next depth usng bfs
-Point get_start_point(vector<vector<int>> &regionMap, vector<vector<int>> &traverseMap){
-	
-	for(int i=0; i<regionMap[0].size(); i++){
-		for(int j=0; j<regionMap.size(); j++){
-			if(check_feasibility(Point(j,i), regionMap, traverseMap)){
-				return Point(j,i);
-			}
-		}
-	}
-	return Point(NULL);
-}
-
-
 // Implements BFS. Given a point, this function is capable of returning an un carved point with same region and closest to the seed point.
 Point get_seed_point(Point seed_point, vector<vector<int>> &regionMap, vector<vector<int>> &traverseMap){
 	
@@ -255,12 +238,18 @@ Point get_seed_point(Point seed_point, vector<vector<int>> &regionMap, vector<ve
 	
 	// QMap is a data structure to barr already considered point to be entering again in the queue.
 	vector<vector<int>> QMap(regionMap.size(), vector<int>(regionMap[0].size(), 0)); 
-
+	if(exists(seed_point.x, seed_point.y, regionMap))
+		QMap[seed_point.x][seed_point.y] = 1;
+	else{
+		seed_point = new Point(0,0);
+		QMap[seed_point.x][seed_point.y] = 1;		
+	}
 	while(!Q.empty()){
 		currentPoint = Q.front();
 		Q.pop();
 		// The second condition was incorporated for rare case of regions divided into various chunks on region map.
-		if(traverseMap[currentPoint.x][currentPoint.y] != 1 && regionMap[currentPoint.x][currentPoint.y] == 0){
+		if(check_feasibility(currentPoint, regionMap, traverseMap)){
+			//cout<<">>"; currentPoint.display(); cout<<"\n";
 			return currentPoint;
 		}
 		for(int i=-1; i<=1; i++)
@@ -322,7 +311,7 @@ Point get_next_point(Point p, Point prev_p, vector<vector<int>> &regionMap, vect
 	Point escape_point;
 	
 	switch(positionScenario){
-		case  0: return Point(NULL); break;
+		case  0: x1 = -1; y1 = +1; x2 = -1; y2 =  0; break;
 		case  1: x1 = -1; y1 = +1; x2 = -1; y2 =  0; break;
 		case  2: x1 = +1; y1 = +1; x2 =  0; y2 = +1; break;
 		case  3: x1 = -1; y1 = +1; x2 = -1; y2 =  0; break;
@@ -362,15 +351,15 @@ Point get_next_point(Point p, Point prev_p, vector<vector<int>> &regionMap, vect
 /******************************************Main Algorithm Logic******************************************/
 
 // Main function where the body of algorithm lies.
-string generate_2D_contours(vector<vector<int>> &regionMap, ToolSpecs &tool, int depth){
+pair<string, Point> generate_2D_contours(vector<vector<int>> &regionMap, ToolSpecs &tool, Point seed_point, int depth){
 
 	Point new_point, prev_point;
 	float slope, prev_slope;
 	string gcode = "";
 
 	vector<vector<int>> traverseMap(regionMap.size(), vector<int>(regionMap[0].size(), 0));
-	
-	Point st_point = get_start_point(regionMap, traverseMap);
+	//cout<<">>>>"; seed_point.display(); cout<<"\n";
+	Point st_point = get_seed_point(seed_point, regionMap, traverseMap);
 	Point point = st_point;
 
 	// Reson behind this is simple. It is assumed that tool will move in -> direction initially hence because of the way we are scanning the region map for the first point, the prev_point can only be the point exactly behind the current point. If no such point exists, prev_point equals current point.
@@ -381,7 +370,7 @@ string generate_2D_contours(vector<vector<int>> &regionMap, ToolSpecs &tool, int
 
 	// code for gcode generation only if point exists to start with in first place. otherwise tool just fools around randomly at constant x y positions at different depths
 	if(!st_point.isNull()){
-		gcode = gcode + write_gcode("raise",0,0,tool.safeHeight);
+		//gcode = gcode + write_gcode("raise",0,0,tool.safeHeight);
 		gcode = gcode + write_gcode("move",point.x,point.y,0);
 		gcode = gcode + write_gcode("raise",0,0,depth);
 	}
@@ -390,6 +379,10 @@ string generate_2D_contours(vector<vector<int>> &regionMap, ToolSpecs &tool, int
 	while(!st_point.isNull()){
 		//mark the point as traversed.
 		traverseMap[point.x][point.y] = 1;
+
+		//gcode = gcode + write_gcode("raise",0,0,tool.safeHeight);
+		//gcode = gcode + write_gcode("move",point.x,point.y,0);
+		//gcode = gcode + write_gcode("raise",0,0,depth);
 			
 		
 		// Uncomment this for contour visualisation
@@ -432,7 +425,8 @@ string generate_2D_contours(vector<vector<int>> &regionMap, ToolSpecs &tool, int
 			}
 		}
 	}
-	return gcode;
+	//prev_point.display(); cout<<"\n";
+	return make_pair(gcode,prev_point);
 	
 }
 
@@ -461,21 +455,25 @@ vector<vector<int>> get_modified_regionMap(VolumetricModel &model, string orient
 // Generates 3D contours iterating over certain values of heightMap.
 string get_3D_contours(VolumetricModel &model, string orientation, vector<vector<int>> &regionMap, BoolDict &isInList, ToolSpecs &tool, pair<int, int> height_dimensions){
 
-	int hMax = height_dimensions.first;
-	int hMin = height_dimensions.second;
+	int hRegionMax = height_dimensions.first;
+	int hRegionMin = height_dimensions.second;
+	static Point seed_point;
 
-	int delta = tool.safeHeight - hMax;
+	int delta = 0;
 
 	vector<vector<int>> modifiedRegionMap(regionMap.size(), vector<int>(regionMap[0].size(), 0));
 	
+	pair<string, Point> contourOutput;
 	string gcode = "";
-	
-	for(int h = hMax; h>hMin; h--){
+	cout<<"hey";
+	for(int h = hRegionMax; h>hRegionMin; h--){
 		
 		//Generates modified regionMap based on isInList and ether map.
-		modifiedRegionMap = get_modified_regionMap(model, orientation, regionMap, isInList, tool, hMax-h, delta);
+		modifiedRegionMap = get_modified_regionMap(model, orientation, regionMap, isInList, tool, tool.safeHeight-h, delta);
 		
-		gcode = gcode + generate_2D_contours(modifiedRegionMap, tool, h-hMax);
+		contourOutput = generate_2D_contours(modifiedRegionMap, tool, seed_point, h - tool.safeHeight);
+		gcode = gcode + contourOutput.first;
+		seed_point = contourOutput.second;
 	}
 	return gcode;
 }
@@ -495,16 +493,14 @@ string generate_toolpath_with_compatibility(VolumetricModel &model, string orien
 
 		cout<<isInList[i]<<" ";
 	}
-	cout<<" depth: "<<depth<<" regionCurrentHeight: "<<regionCurrentHeight<<" maxHeight: "<<maxHeight<<"\n\n";
+	cout<<" depth: "<<depth<<" regionCurrentHeight: "<<regionCurrentHeight<<" maxHeight: "<<maxHeight<<"orientation: "<<orientation<<"\n\n";
 
-	ToolSpecs tool(0,TOOL_DIA,0,depthPerPass,0,0);
+	ToolSpecs tool(0,TOOL_DIA,0,depthPerPass,maxHeight,0);
 
-	int hMax = get_highest_value(heightMap);
-	int hMin = get_lowest_value(heightMap);
-
-	//cout<<hMax<<" "<<hMin<<"\n\n";
+	//int hMax = get_highest_value(heightMap);
+	//int hMin = get_lowest_value(heightMap);
 	
-	return get_3D_contours(model, orientation, regionMap, isInList, tool, make_pair(maxHeight, regionCurrentHeight - depth));
+	return get_3D_contours(model, orientation, regionMap, isInList, tool, make_pair(regionCurrentHeight, regionCurrentHeight - depth));
 
 	return "";
 
