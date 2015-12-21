@@ -175,9 +175,11 @@ std::vector<vector<vector<int>>> convert_to_voxels(char *stlFile)
 		for(int lIter = 0; lIter<lMax; lIter++){
 			for(int bIter = 0; bIter<bMax; bIter++){
 				cout<<"\nWriting voxel no. "<<l<<"("<<lIter<<","<<bIter<<","<<hMax - hIter-1<<")"<<" of "<<total;
-				if((*iter) == 1)
+				if((*iter) == 1){
 					//This fix was made to resolve mirror image error
 					vox[lIter][bIter][hMax - hIter-1] = true;
+					cout<<"hey";
+				}
 				else
 					vox[lIter][bIter][hMax - hIter-1] = false;
 				iter++; l++;

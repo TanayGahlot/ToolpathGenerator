@@ -6,7 +6,8 @@
 		[x] Contours for 3D
 		[x] Integrating this file with source.(This looks like a hell of a job right now!).
 		[x] Clean the code
-		[ ] Rerouting tool for efficiency in cutting.
+		[x] Rerouting tool for efficiency in cutting.
+		[ ] Bring callItMagic to its knees!!!!
 		[ ]Once merged, also consider replacing vector<vector<int>> with Matrix class in the source. But for that, source needs to be cleaned first to avoid incomatibilities in header files.
 
 	And ya...screw you callItMagic!
@@ -519,7 +520,6 @@ vector<vector<int>> get_modified_regionMap(VolumetricModel &model, string orient
 	vector<vector<int>> modifiedRegionMap(regionMap.size(), vector<int>(regionMap[0].size(), 0));
 	for(int i=0;i<regionMap[0].size();i++){
 		for(int j=0; j<regionMap.size(); j++){
-			//cout<<"\nPoint"<<j<<" "<<i<<" "<<depth;
 			if(isInList[regionMap[j][i]] && callItMagic(model, j, i, depth, orientation, tool.safeHeight, delta)){
 				modifiedRegionMap[j][i] = 0;
 			}
@@ -548,7 +548,7 @@ string get_3D_contours(VolumetricModel &model, string orientation, vector<vector
 	string gcode = "";
 	
 	for(int h = hRegionMax; h>hRegionMin; h--){
-		cout<<hRegionMax<<" "<<hRegionMin<<" "<<h<<"\n";
+		//cout<<hRegionMax<<" "<<hRegionMin<<" "<<h<<"\n";
 		//Generates modified regionMap based on isInList and ether map.
 		modifiedRegionMap = get_modified_regionMap(model, orientation, regionMap, isInList, tool, tool.safeHeight-h, delta);
 		
@@ -574,6 +574,7 @@ string generate_toolpath_with_compatibility(VolumetricModel &model, string orien
 
 		cout<<isInList[i]<<" ";
 	}
+	
 	cout<<" depth: "<<depth<<" regionCurrentHeight: "<<regionCurrentHeight<<" maxHeight: "<<maxHeight<<"orientation: "<<orientation<<"\n\n";
 
 	ToolSpecs tool(0,TOOL_DIA,0,depthPerPass,maxHeight,0);
@@ -583,9 +584,6 @@ string generate_toolpath_with_compatibility(VolumetricModel &model, string orien
 	
 	return get_3D_contours(model, orientation, regionMap, heightMap, isInList, tool, make_pair(regionCurrentHeight, regionCurrentHeight - depth-1));
 
-	return "";
-
-	
 }
 
 /*
