@@ -467,8 +467,13 @@ pair<string, Point> generate_2D_contours(vector<vector<int>> &regionMap, ToolSpe
 	if(!st_point.isNull()){
 		
 		pathAndHeight = get_relevent_path(seed_point,point,regionMap,heightMap);
+<<<<<<< Updated upstream
 		gcode = gcode + write_gcode(pathAndHeight.first, point.x, point.y,  0);
 		gcode = gcode + write_gcode("raise",0,0,depth);
+=======
+		gcode += write_gcode(pathAndHeight.first, point.x, point.y,  pathAndHeight.second - tool.safeHeight);
+		gcode += write_gcode("raise",0,0,depth);
+>>>>>>> Stashed changes
 	}
 
 	// This only happens when no point remains to be carved in the region.
@@ -584,7 +589,7 @@ string get_3D_contours(VolumetricModel &model, string orientation, vector<vector
 		modifiedRegionMap = get_modified_regionMap(model, orientation, regionMap, isInList, tool, tool.safeHeight-h, delta);
 		
 		contourOutput = generate_2D_contours(modifiedRegionMap, tool, heightMap, seed_point, h - tool.safeHeight);
-		gcode = gcode + contourOutput.first;
+		gcode += contourOutput.first;
 		seed_point = contourOutput.second;
 	}
 	return gcode;
