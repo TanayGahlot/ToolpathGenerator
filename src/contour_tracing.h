@@ -370,12 +370,12 @@ Point get_next_point(Point p, Point prev_p, vector<vector<int>> &regionMap, vect
 pair<string, int> get_relevent_path(Point start, Point end, vector<vector<int>> &regionMap, vector<vector<int>> &heightMap){
 	int releventPathFlag = 1;
 	int height;	
-
+	
 	if(start.x == end.x && start.y == end.y){
 		// See if it is same fucking point and rejoice!!!
 		return make_pair("",0);
 	}
-	else{
+	/*else{
 		// Use DDA algorithm
 		float currentX, currentY;
 		int dx = end.x - start.x;
@@ -386,6 +386,14 @@ pair<string, int> get_relevent_path(Point start, Point end, vector<vector<int>> 
 		float xIncr = dx/(float)steps;
 		float yIncr = dy/(float)steps;
 
+		for(int i=0; i<heightMap.size(); i++){
+			cout<<"\n";
+			for(int j=0; j<heightMap[0].size(); j++){
+					cout<<heightMap[i][j]<<" ";
+			}
+		}
+		cout<<"\n\n\n";
+
 		for(int currentStep = 0; currentStep < steps; currentStep++)
 		{
 			currentX += xIncr;
@@ -393,6 +401,7 @@ pair<string, int> get_relevent_path(Point start, Point end, vector<vector<int>> 
 			if(regionMap[currentX][currentY] == 1){
 				if(height < heightMap[currentX][currentY]){
 					height = heightMap[currentX][currentY];
+					cout<<height<<" "<<currentX<<currentY<<"Dead may rise\n";
 				}
 				releventPathFlag = 0;
 			}
@@ -403,7 +412,7 @@ pair<string, int> get_relevent_path(Point start, Point end, vector<vector<int>> 
 
 	}
 	
-	
+	*/
 	/*
 	releventPathFactor = 1;
 	
@@ -425,7 +434,7 @@ pair<string, int> get_relevent_path(Point start, Point end, vector<vector<int>> 
 		return "move around y z"
 	}
 	*/
-	return make_pair("move raised",height +2);
+	return make_pair("move raised",0);
 }
 
 
@@ -458,7 +467,7 @@ pair<string, Point> generate_2D_contours(vector<vector<int>> &regionMap, ToolSpe
 	if(!st_point.isNull()){
 		
 		pathAndHeight = get_relevent_path(seed_point,point,regionMap,heightMap);
-		gcode = gcode + write_gcode(pathAndHeight.first, point.x, point.y,  pathAndHeight.second - tool.safeHeight);
+		gcode = gcode + write_gcode(pathAndHeight.first, point.x, point.y,  0);
 		gcode = gcode + write_gcode("raise",0,0,depth);
 	}
 
@@ -469,7 +478,7 @@ pair<string, Point> generate_2D_contours(vector<vector<int>> &regionMap, ToolSpe
 
 		if(!point.isNeighbour(prev_point)){
 			pathAndHeight = get_relevent_path(prev_point,point,regionMap,heightMap);
-			gcode = gcode + write_gcode(pathAndHeight.first,point.x,point.y,pathAndHeight.second - tool.safeHeight);
+			gcode = gcode + write_gcode(pathAndHeight.first,point.x,point.y,0);
 			gcode = gcode + write_gcode("raise",0,0,depth);
 		}
 			
@@ -569,8 +578,8 @@ string get_3D_contours(VolumetricModel &model, string orientation, vector<vector
 	pair<string, Point> contourOutput;
 	string gcode = "";
 	
-	for(int h = hRegionMax; h>hRegionMin; h--){
-		//cout<<hRegionMax<<" "<<hRegionMin<<" "<<h<<"\n";
+	for(int h = hRegionMax; h>hRegionMin; h-=tool.depthPerPass){
+
 		//Generates modified regionMap based on isInList and ether map.
 		modifiedRegionMap = get_modified_regionMap(model, orientation, regionMap, isInList, tool, tool.safeHeight-h, delta);
 		
@@ -599,7 +608,7 @@ string generate_toolpath_with_compatibility(VolumetricModel &model, string orien
 	
 	cout<<" depth: "<<depth<<" regionCurrentHeight: "<<regionCurrentHeight<<" maxHeight: "<<maxHeight<<"orientation: "<<orientation<<"\n\n";
 
-	ToolSpecs tool(0,TOOL_DIA,0,depthPerPass,maxHeight,0);
+	ToolSpecs tool(0,TOOL_DIA,0,3,maxHeight,0);
 
 	//int hMax = get_highest_value(heightMap);
 	//int hMin = get_lowest_value(heightMap);
@@ -608,6 +617,8 @@ string generate_toolpath_with_compatibility(VolumetricModel &model, string orien
 
 }
 
+
+// Main Function used for debugging
 /*
 int main(){
 	

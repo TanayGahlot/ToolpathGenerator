@@ -29,7 +29,7 @@ int main(int argc, char *argv[]){
 	int depthPerPass=1;
 	bool printVolume = true;
 	int toolRadius = 10;
-	int toolLength = 8;
+	int toolLength = 10;
 	long long int objectsVolume=0;
 	
 	//taking voxel input  
