@@ -7,7 +7,7 @@
 		[x] Integrating this file with source.(This looks like a hell of a job right now!).
 		[x] Clean the code
 		[x] Rerouting tool for efficiency in cutting.
-		[ ] Bring callItMagic to its knees!!!!
+		[x] Bring callItMagic to its knees!!!!
 		[ ]Once merged, also consider replacing vector<vector<int>> with Matrix class in the source. But for that, source needs to be cleaned first to avoid incomatibilities in header files.
 
 	And ya...screw you callItMagic!
@@ -608,7 +608,7 @@ string generate_toolpath_with_compatibility(VolumetricModel &model, string orien
 	
 	cout<<" depth: "<<depth<<" regionCurrentHeight: "<<regionCurrentHeight<<" maxHeight: "<<maxHeight<<"orientation: "<<orientation<<"\n\n";
 
-	ToolSpecs tool(0,TOOL_DIA,0,3,maxHeight,0);
+	ToolSpecs tool(0,TOOL_DIA,0,depthPerPass,maxHeight,0);
 
 	//int hMax = get_highest_value(heightMap);
 	//int hMin = get_lowest_value(heightMap);
