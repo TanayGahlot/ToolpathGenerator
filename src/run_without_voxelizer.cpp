@@ -29,7 +29,7 @@ int main(int argc, char *argv[]){
 	int depthPerPass=1;
 	bool printVolume = true;
 	int toolRadius = 10;
-	int toolLength = 10;
+	int toolLength = 100;
 	long long int objectsVolume=0;
 	
 	//taking voxel input  
@@ -90,7 +90,7 @@ int main(int argc, char *argv[]){
 	//saving toolpath in folder "OrientationOutput"
  	for(it = sk.begin(); it != sk.end(); it++){
  		ofstream myfile;
- 		myfile.open ("./" + folderName + "/" + *itt + ".gcode" );
+ 		myfile.open ("./" + folderName + "/" + *itt + ".nc" );
  		myfile<<*it;
  		itt++;
  		myfile.close();
