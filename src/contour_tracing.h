@@ -113,7 +113,7 @@ class ToolSpecs{
 /******************************************Lower Utility Functions******************************************/
 
 // Ensures if the point exists to avoid segmentation faults. This can be replaced by equivalent function in the source (if such function exists!)
-bool exists(int x, int y, vector<vector<int>> &regionMap){
+bool exists(int x, int y, vector<vector<int> > &regionMap){
 	if(x>=0 && x<regionMap.size() && y>=0 && y<regionMap[0].size()){
 		return true;
 	}
@@ -128,7 +128,7 @@ float calculate_slope(Point p1, Point p2){
 
 
 // Function for debugging, also can be used as fancy way to visualise contour process.
-void display(vector<vector<int>> &regionMap, vector<vector<int>> &traverseMap){
+void display(vector<vector<int> > &regionMap, vector<vector<int> > &traverseMap){
 	for(int i=0; i<regionMap.size(); i++){
 		cout<<"\n";
 		for(int j=0; j<regionMap[0].size(); j++){
@@ -146,7 +146,7 @@ void display(vector<vector<int>> &regionMap, vector<vector<int>> &traverseMap){
 
 
 // Gets highest value from height map. Can be replaced with equivalent function from source.
-int get_highest_value(vector<vector<int>> &heightMap){
+int get_highest_value(vector<vector<int> > &heightMap){
 	int high = heightMap[0][0];
 	for (int i=0; i<heightMap[0].size(); i++){
 		for(int j=0; j<heightMap.size(); j++){
@@ -160,7 +160,7 @@ int get_highest_value(vector<vector<int>> &heightMap){
 
 
 // Gets lowest value from height map. Can be replaced with equivalent function from source.
-int get_lowest_value(vector<vector<int>> &heightMap){
+int get_lowest_value(vector<vector<int> > &heightMap){
 	int low = heightMap[0][0];
 	for (int i=0; i<heightMap[0].size(); i++){
 		for(int j=0; j<heightMap.size(); j++){
@@ -198,7 +198,7 @@ string write_gcode(string action, int x=0, int y=0, int z=0){
 /******************************************Higher Utility Functions******************************************/
 
 // Combines all the checks so higher abstract functions can call hassle free single function.
-bool check_feasibility(Point P, vector<vector<int>> regionMap, vector<vector<int>> traverseMap){
+bool check_feasibility(Point P, vector<vector<int> > regionMap, vector<vector<int> > traverseMap){
 
 	if(exists(P.x, P.y, regionMap) && regionMap[P.x][P.y] == 0 && traverseMap[P.x][P.y] == 0){
 		return true;
@@ -207,7 +207,7 @@ bool check_feasibility(Point P, vector<vector<int>> regionMap, vector<vector<int
 }
 
 // This function is set of if else rules to classify locality of point into known scenarios. Iteratively checks all neighbours for existance, region check and traversal to set correct bits in bitMap.
-int get_position_scenario(Point p, vector<vector<int>> &regionMap, vector<vector<int>> &traverseMap){
+int get_position_scenario(Point p, vector<vector<int> > &regionMap, vector<vector<int> > &traverseMap){
 
 	int currentRegion = regionMap[p.x][p.y];
 	int positionScenario = 0;
@@ -232,7 +232,7 @@ int get_position_scenario(Point p, vector<vector<int>> &regionMap, vector<vector
 
 
 // Function to debug code by visualisation
-void visualise(vector<vector<int>> &regionMap, vector<vector<int>> &traverseMap){
+void visualise(vector<vector<int> > &regionMap, vector<vector<int> > &traverseMap){
 	std::chrono::milliseconds timespan(SLEEP_TIME);
 	std::this_thread::sleep_for(timespan);
 	display(regionMap, traverseMap);
@@ -245,7 +245,7 @@ void visualise(vector<vector<int>> &regionMap, vector<vector<int>> &traverseMap)
 /******************************************Seeding Functions******************************************/
 
 // Implements BFS. Given a point, this function is capable of returning an un carved point with same region and closest to the seed point.
-Point get_seed_point(Point seed_point, vector<vector<int>> &regionMap, vector<vector<int>> &traverseMap){
+Point get_seed_point(Point seed_point, vector<vector<int> > &regionMap, vector<vector<int> > &traverseMap){
 	
 	
 	Point currentPoint;
@@ -253,11 +253,11 @@ Point get_seed_point(Point seed_point, vector<vector<int>> &regionMap, vector<ve
 
 	
 	// QMap is a data structure to barr already considered point to be entering again in the queue.
-	vector<vector<int>> QMap(regionMap.size(), vector<int>(regionMap[0].size(), 0)); 
+	vector<vector<int> > QMap(regionMap.size(), vector<int>(regionMap[0].size(), 0)); 
 	if(exists(seed_point.x, seed_point.y, regionMap))
 		QMap[seed_point.x][seed_point.y] = 1;
 	else{
-		seed_point = new Point(0,0);
+		seed_point = Point(0,0);
 		QMap[seed_point.x][seed_point.y] = 1;		
 	}
 	seed_point.display(); cout<<"<<<\n";
@@ -291,7 +291,7 @@ Point get_seed_point(Point seed_point, vector<vector<int>> &regionMap, vector<ve
 
 // This function handles complexity of special case. It resolves a bug in which a point is surrounded by boundaries on all sides and hence tool cannot move further. It sets certain rules in the locality of point in such cases to know in which case it fits. Then decides on the next point to be considered. Does not tell if the point exists or not.
 // [ ] Needs to also incorporate what happens if point is surrounded by traversed point. For now tool just relocates itself by means of get_seed_point function
-Point escape_from_closed_region(Point p, vector<vector<int>> &regionMap, vector<vector<int>> &traverseMap){
+Point escape_from_closed_region(Point p, vector<vector<int> > &regionMap, vector<vector<int> > &traverseMap){
 	
 	int currentRegion = regionMap[p.x][p.y];
 	int closedScenario=0;
@@ -321,7 +321,7 @@ Point escape_from_closed_region(Point p, vector<vector<int>> &regionMap, vector<
 
 
 // Implements a lookup table. gets bitMap and looks into table for next points to be considered around the current point. If no such point exists, returns null point.
-Point get_next_point(Point p, Point prev_p, vector<vector<int>> &regionMap, vector<vector<int>> &traverseMap){
+Point get_next_point(Point p, Point prev_p, vector<vector<int> > &regionMap, vector<vector<int> > &traverseMap){
 	
 	int currentRegion = regionMap[p.x][p.y];
 	int positionScenario = get_position_scenario(p, regionMap, traverseMap);
@@ -367,7 +367,7 @@ Point get_next_point(Point p, Point prev_p, vector<vector<int>> &regionMap, vect
 }
 
 //This function decides on the path to take in case of disjoint movement
-pair<string, int> get_relevent_path(Point start, Point end, vector<vector<int>> &regionMap, vector<vector<int>> &heightMap){
+pair<string, int> get_relevent_path(Point start, Point end, vector<vector<int> > &regionMap, vector<vector<int> > &heightMap){
 	int releventPathFlag = 1;
 	int height;	
 	
@@ -441,14 +441,14 @@ pair<string, int> get_relevent_path(Point start, Point end, vector<vector<int>> 
 /******************************************Main Algorithm Logic******************************************/
 
 // Main function where the body of algorithm lies.
-pair<string, Point> generate_2D_contours(vector<vector<int>> &regionMap, ToolSpecs &tool, vector<vector<int>> &heightMap, Point seed_point, int depth){
+pair<string, Point> generate_2D_contours(vector<vector<int> > &regionMap, ToolSpecs &tool, vector<vector<int> > &heightMap, Point seed_point, int depth){
 
 	Point new_point, prev_point;
 	float slope, prev_slope;
 	string gcode = "";
 	pair<string, int> pathAndHeight;
 
-	vector<vector<int>> traverseMap(regionMap.size(), vector<int>(regionMap[0].size(), 0));
+	vector<vector<int> > traverseMap(regionMap.size(), vector<int>(regionMap[0].size(), 0));
 
 	Point st_point = get_seed_point(seed_point, regionMap, traverseMap);
 	Point point = st_point;
@@ -531,9 +531,9 @@ pair<string, Point> generate_2D_contours(vector<vector<int>> &regionMap, ToolSpe
 /******************************************Highest Abstraction Functions******************************************/
 
 // Generates modified height map by considering current position in region graph, ether(#callItMagic) and regionMap. One of the biggest inefficiencies in code. Needs to be taken care in future.
-vector<vector<int>> get_modified_regionMap(VolumetricModel &model, string orientation, vector<vector<int>> regionMap, BoolDict isInList, ToolSpecs &tool, int depth, int delta){
+vector<vector<int> > get_modified_regionMap(VolumetricModel &model, string orientation, vector<vector<int> > regionMap, BoolDict isInList, ToolSpecs &tool, int depth, int delta){
 
-	vector<vector<int>> modifiedRegionMap(regionMap.size(), vector<int>(regionMap[0].size(), 0));
+	vector<vector<int> > modifiedRegionMap(regionMap.size(), vector<int>(regionMap[0].size(), 0));
 	for(int i=0;i<regionMap[0].size();i++){
 		for(int j=0; j<regionMap.size(); j++){
 			if(isInList[regionMap[j][i]] && callItMagic(model, j, i, depth, orientation, tool.safeHeight, delta)){
@@ -558,7 +558,7 @@ vector<vector<int>> get_modified_regionMap(VolumetricModel &model, string orient
 }
 
 // Generates 3D contours iterating over certain values of heightMap.
-string get_3D_contours(VolumetricModel &model, string orientation, vector<vector<int>> &regionMap, vector<vector<int>> &heightMap, BoolDict &isInList, ToolSpecs &tool, pair<int, int> height_dimensions){
+string get_3D_contours(VolumetricModel &model, string orientation, vector<vector<int> > &regionMap, vector<vector<int> > &heightMap, BoolDict &isInList, ToolSpecs &tool, pair<int, int> height_dimensions){
 
 	int hRegionMax = height_dimensions.first;
 	int hRegionMin = height_dimensions.second;
@@ -573,7 +573,7 @@ string get_3D_contours(VolumetricModel &model, string orientation, vector<vector
 
 	int delta = 0;
 
-	vector<vector<int>> modifiedRegionMap(regionMap.size(), vector<int>(regionMap[0].size(), 0));
+	vector<vector<int> > modifiedRegionMap(regionMap.size(), vector<int>(regionMap[0].size(), 0));
 	
 	pair<string, Point> contourOutput;
 	string gcode = "";
@@ -592,7 +592,7 @@ string get_3D_contours(VolumetricModel &model, string orientation, vector<vector
 
 
 // This function has been written to make this file compatible with source. Once source is cleaned and restructured, this function would stand obselete.
-string generate_toolpath_with_compatibility(VolumetricModel &model, string orientation, AdjList vlist, Matrix regionMap, int depth, int noOfRegion, int regionCurrentHeight, int safeHeight, int maxHeight, vector<vector<int>>heightMap, int TOOL_DIA, int depthPerPass){
+string generate_toolpath_with_compatibility(VolumetricModel &model, string orientation, AdjList vlist, Matrix regionMap, int depth, int noOfRegion, int regionCurrentHeight, int safeHeight, int maxHeight, vector<vector<int> >heightMap, int TOOL_DIA, int depthPerPass){
 	
 	AdjList::iterator it;
 	BoolDict isInList;
