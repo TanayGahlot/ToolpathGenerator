@@ -584,7 +584,7 @@ string get_3D_contours(VolumetricModel &model, string orientation, vector<vector
 		modifiedRegionMap = get_modified_regionMap(model, orientation, regionMap, isInList, tool, tool.safeHeight-h, delta);
 		
 		contourOutput = generate_2D_contours(modifiedRegionMap, tool, heightMap, seed_point, h - tool.safeHeight);
-		gcode = gcode + contourOutput.first;
+		gcode += contourOutput.first;
 		seed_point = contourOutput.second;
 	}
 	return gcode;
