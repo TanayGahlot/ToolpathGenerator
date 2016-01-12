@@ -17,7 +17,7 @@ NoOfTestCases = 7
 
 
 #compiling latest version of sequence generator 
-p = sp.Popen(["g++", "../src/run_without_voxelizer.cpp", "-o", "run" "-std=c++11" "-g"])
+p = sp.Popen(["g++", "../src/run_without_voxelizer.cpp", "-o", "run" ,"-std=c++11", "-g"])
 p.communicate()
 
 #for each case create a folder and run the test cases 
