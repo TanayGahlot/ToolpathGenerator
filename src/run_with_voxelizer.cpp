@@ -11,6 +11,7 @@
 #include "sequenceGenerator.h"
 #include "voxelizer.h"
 #include <fstream>
+#include "lib/cvmlcpp/base/Matrix"
 
 
 int main(int argc, char **argv){
@@ -22,10 +23,14 @@ int main(int argc, char **argv){
 	
 	
 	//data model for storing voxels 
-	vector<vector<vector<int> > > voxels = convert_to_voxels(argv[1]);
-	lMax = voxels.size();
-	bMax = voxels[0].size();
-	hMax = voxels[0][0].size();
+	cvmlcpp::Matrix<int, 3u> voxels = convert_to_voxels(argv[1]);
+	hMax = voxels.size();
+	lMax = voxels[0].size();
+	bMax = voxels[0][0].size();
+	hMax /= lMax;
+	lMax /= bMax;
+	
+	cout<<hMax<<" "<<lMax<<" "<<bMax;
 
 	char boolVal; 
 	int TOOL_DIA = 1;
