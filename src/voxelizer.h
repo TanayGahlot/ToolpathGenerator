@@ -7,6 +7,8 @@
 
 #define TURN_ON_SCALE 0
 #define SCALE_BY 100
+#define TURN_ON_RESOLUTION 0
+#define RESOLUTION 0.1
 using namespace std;
 
 // Generic functions for using cvmlcpp library
@@ -22,7 +24,10 @@ cvmlcpp::Matrix<int, 3u> getVoxelizedMatrixFromFile(char *stlFile){
 		geometry.scaleTo(SCALE_BY);
 	}
 	cout<<endl<<"Voxelizing...";
-	cvmlcpp::voxelize(geometry, voxels);
+	if(TURN_ON_RESOLUTION)
+		cvmlcpp::voxelize(geometry, voxels, RESOLUTION);
+	else
+		cvmlcpp::voxelize(geometry, voxels);
 
 	return voxels;
 }
@@ -37,7 +42,10 @@ cvmlcpp::Matrix<int, 3u> getVoxelizedMatrixFromString(char *data){
 		geometry.scaleTo(SCALE_BY);
 	}
 	cout<<"\nVoxelizing...";
-	cvmlcpp::voxelize(geometry, voxels);
+	if(TURN_ON_RESOLUTION)
+		cvmlcpp::voxelize(geometry, voxels, RESOLUTION);
+	else
+		cvmlcpp::voxelize(geometry, voxels);
 
 	return voxels;
 }
