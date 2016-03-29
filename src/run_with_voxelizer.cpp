@@ -37,7 +37,7 @@ int main(int argc, char **argv){
 	int objectsVolume=0;
 	
 
-	cout<<"Ned is Dead\n";
+	
 	for(hIter = 0; hIter<hMax; hIter++){
 		for(lIter = 0; lIter<lMax; lIter++){
 			for(bIter = 0; bIter<bMax; bIter++){
@@ -53,7 +53,7 @@ int main(int argc, char **argv){
 	//cout<<voxels[25][6][13]<<" *"<<voxels[23][6][13]<<"Yaha dekho!!\n";
 	//internal representation of the model 
 	VolumetricModel model(voxels, lMax, bMax, hMax);
-	cout<<"Blackwater on fire\n";
+	
 	//generating sequence using genetic algorithm 
 	list<string> sequence = generateSequence(model);
 	// list<string> sequence;
@@ -68,7 +68,7 @@ int main(int argc, char **argv){
 	pair<list<string>, list<string> > skk = toolpathGeneratorForSequence(sequence, model, TOOL_DIA,lMax,bMax, hMax,folderName, printVolume, feedrate, depthPerPass, toolRadius, toolLength, objectsVolume);
 	list<string> sk = skk.second;
 	sequence = skk.first;
-	cout<<"All hail Joffrey\n";
+	
 	list<string>::iterator itt;
 	itt = sequence.begin();
 
@@ -83,7 +83,7 @@ int main(int argc, char **argv){
  		itt++;
  		myfile.close();
  	}
-	cout<<"Stannis the mannis\n";
+	
 	// // list<string> sk;
 	// // sk.push_back("xz+");
 	// // cout<< toolpathGeneratorForSequence(sk, model, TOOL_DIA, lMax, bMax, hMax);
