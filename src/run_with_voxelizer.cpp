@@ -1,71 +1,48 @@
 //oggpnson 
 //hkhr 
 
-#include<iostream>
-#include<list>
-#include<vector>
-#include<map>
-#include<stack>
-#include<algorithm>
+#include <iostream>
+#include <list>
+#include <vector>
+#include <map>
+#include <stack>
+#include <algorithm>
+#include <fstream>
+
+#include "model/structures.h"
+#include "model/ToolConfig.h"
+#include "model/HeightMap.hpp"
+#include "model/VolumetricModel.h"
 #include "toolpathGenerator.h"
 #include "sequenceGenerator.h"
 #include "voxelizer.h"
-#include <fstream>
-
 
 int main(int argc, char **argv){
-
-	//length, breadth, height of the model along with the corresponding iterator 
-	int lMax, bMax, hMax, lIter, bIter, hIter;
-	//cin>>lMax>>bMax>>hMax; 
+ 
 	string folderName = static_cast<string>(argv[2]);
 	
-	
-	//data model for storing voxels 
+	/* Arguement 1 has stl file address which is converted to voxels. */
 	vector<vector<vector<int> > > voxels = convert_to_voxels(argv[1]);
-	lMax = voxels.size();
-	bMax = voxels[0].size();
-	hMax = voxels[0][0].size();
+	int lMax = voxels.size();
+	int bMax = voxels[0].size();
+	int hMax = voxels[0][0].size();
 
+	ToolConfig toolConfig;
+	
 	char boolVal; 
-	int TOOL_DIA = 1;
-	int feedrate = 500;
-	int depthPerPass=1;
 	bool printVolume = true;
-	int toolRadius = 10;
-	int toolLength = 8;
 	int objectsVolume=0;
-	
 
-	
-	for(hIter = 0; hIter<hMax; hIter++){
-		for(lIter = 0; lIter<lMax; lIter++){
-			for(bIter = 0; bIter<bMax; bIter++){
-				if(voxels[lIter][bIter][hIter] = 1)
-					objectsVolume += 1;
-					
-			}	
-		}
-	}
-
-	
-
-	//cout<<voxels[25][6][13]<<" *"<<voxels[23][6][13]<<"Yaha dekho!!\n";
-	//internal representation of the model 
+	/* Initialise Volumetric Model */
 	VolumetricModel model(voxels, lMax, bMax, hMax);
 	
-	//generating sequence using genetic algorithm 
-	list<string> sequence = generateSequence(model);
-	// list<string> sequence;
-	// int i;
-	// for(i=0; i<NOOFORIENTATION; i++)
-	// 	sequence.push_back(ORIENTATION[i]);
-
-	list<string>::iterator it;
-
+	/* Generate Tentative Sequence of Orientations */
+	list<string> tentativeSequence = generateTentativeSequence(model);
 	
-	//generating toolpath for the optimal sequence thats produced by sequence generator 
-	pair<list<string>, list<string> > skk = toolpathGeneratorForSequence(sequence, model, TOOL_DIA,lMax,bMax, hMax,folderName, printVolume, feedrate, depthPerPass, toolRadius, toolLength, objectsVolume);
+	list<string>::iterator it;
+	
+	/* Operation Planning for each Orientation */
+	pair<list<string>, list<string> > skk = toolpathGeneratorForSequence(model, toolConfig, tentativeSequence, lMax,bMax, hMax,folderName, printVolume);
 	list<string> sk = skk.second;
 	sequence = skk.first;
 	

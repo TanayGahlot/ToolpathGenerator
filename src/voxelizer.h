@@ -1,5 +1,6 @@
 #include <iostream>
-#include<vector>
+#include <vector>
+
 #include "lib/cvmlcpp/base/Matrix"
 #include "lib/cvmlcpp/volume/Geometry"
 #include "lib/cvmlcpp/volume/VolumeIO"
@@ -32,136 +33,11 @@ cvmlcpp::Matrix<int, 3u> getVoxelizedMatrixFromFile(char *stlFile){
 	return voxels;
 }
 
-cvmlcpp::Matrix<int, 3u> getVoxelizedMatrixFromString(char *data){
-	cvmlcpp::Matrix<int, 3u> voxels;
-	cvmlcpp::Geometry<float> geometry;
-
-	//cvmlcpp library modified to use build this feature
-	cvmlcpp::readStringSTL(geometry, data);
-	if(TURN_ON_SCALE){
-		geometry.scaleTo(SCALE_BY);
-	}
-	cout<<"\nVoxelizing...";
-	if(TURN_ON_RESOLUTION)
-		cvmlcpp::voxelize(geometry, voxels, RESOLUTION);
-	else
-		cvmlcpp::voxelize(geometry, voxels);
-
-	return voxels;
-}
-
-// This function returns voxel string for standalone voxelizer
-string getVoxelizedString(char *data, string inputFormat){
-	
-	cvmlcpp::Matrix<int, 3u> voxels; 
-	if(inputFormat == "file"){
-		voxels = getVoxelizedMatrixFromFile(data);
-	}
-	else if(inputFormat == "string"){
-		voxels = getVoxelizedMatrixFromString(data);
-	}
-	
-
-	string vox_string ="";
-	
-	tr1::array<std::size_t, 3>::const_iterator i = voxels.extents();
-	int xMax = (*i);
-	i++;
-	int yMax = (*i);
-	i++;
-	int zMax = (*i);
-	int l=0;
-
-	int lMax = yMax;
-	int bMax = zMax;
-	int hMax = xMax;
-	
-	
-	cout<<endl<<"Dimensions : L="<<lMax<<" B="<<hMax<<" H="<<xMax<<endl;
-
-	string frame = "";
-	for(cvmlcpp::Matrix<int,3u>::iterator iter = voxels.begin(); iter != voxels.end();l++){
-				//This fix was made to resolve mirror image error
-				vox_string = "\n\n\n" + frame + vox_string;
-				frame = "";
-				for(int m =0; m<yMax; m++){	
-						frame = frame + "\n";
-						for(int n = 0; n<zMax; n++){								
-								cout<<"\rWriting voxel no. "<<l<<" of "<<(xMax)*(yMax)*(zMax);
-								l++;
-								frame = frame + to_string((*iter));
-								iter++;
-						}
-				}
-		
-	}
-	vox_string = to_string(lMax) + " " + to_string(bMax) + " " + to_string(hMax) + vox_string;
-	
-	return vox_string;
-}
-
-// This function returns voxel string for standalone voxelizer in JSON format
-string getVoxelizedJSONString(char *data, string inputFormat){
-	
-	cvmlcpp::Matrix<int, 3u> voxels; 
-	if(inputFormat == "file"){
-		voxels = getVoxelizedMatrixFromFile(data);
-	}
-	else if(inputFormat == "string"){
-		voxels = getVoxelizedMatrixFromString(data);
-	}
-
-	string vox_string ="";
-	
-	tr1::array<std::size_t, 3>::const_iterator i = voxels.extents();
-	int xMax = (*i);
-	i++;
-	int yMax = (*i);
-	i++;
-	int zMax = (*i);
-	int l=0;
-
-	int lMax = yMax;
-	int bMax = zMax;
-	int hMax = xMax;
-	
-	
-	cout<<endl<<"Dimensions : L="<<lMax<<" B="<<hMax<<" H="<<xMax<<endl;
-
-	//writes string in JSON Format as required by the web interface
-
-	vox_string = "{ \n \
-			\"length\" : \"" + to_string(lMax) + "\",\n \
-			\"breadth\" : \"" + to_string(bMax) + "\",\n \
-			\"height\" : \"" + to_string(hMax) + "\",\n \
-			\"stream\" : \"";
-
-	string stream = "";
-	string frame = "";
-	for(cvmlcpp::Matrix<int,3u>::iterator iter = voxels.begin(); iter != voxels.end();l++){
-				//This fix was made to resolve mirror image error
-				stream = frame + stream;
-				frame = "";
-				for(int m =0; m<yMax; m++){
-						for(int n = 0; n<zMax; n++){								
-								cout<<"\rWriting voxel no. "<<l<<" of "<<(xMax)*(yMax)*(zMax);
-								l++;
-								frame = frame + to_string((*iter));
-								iter++;
-						}
-				}
-		
-	}
-	vox_string = vox_string + stream + "\"\n }";
-	
-	return vox_string;
-}
-
-
 // This function is used with integrated voxelizer
-std::vector<vector<vector<int>>> convert_to_voxels(char *stlFile)
-{
+std::vector<vector<vector<int>>> convert_to_voxels(char *stlFile){
+	
 	cvmlcpp::Matrix<int, 3u> voxels = getVoxelizedMatrixFromFile(stlFile);
+	
 	tr1::array<std::size_t, 3>::const_iterator i = voxels.extents();
 	int xMax = (*i);
 	i++;

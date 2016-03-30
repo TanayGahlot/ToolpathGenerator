@@ -11,369 +11,88 @@
 #include <fstream>
 
 using namespace std;
-
-typedef map<int, pair<int, list<int> > > Graph;
-typedef vector< vector<int> > Matrix;
-typedef stack<pair<int, int > > Stack;
-typedef list<pair<int, int> > Lop;
-typedef list<int> AdjList;
 typedef map<int , bool> BoolDict;
 typedef stack<int> IntStack;
-typedef map<int, int> IntMap;
-typedef long long int ll;
 
-class VolumetricModel{
-public:
 
-	int xmax, ymax, zmax;
-	int xmin, ymin, zmin;//x,y,z varies from *min to *max with both end included 
-	vector<vector<vector<int> > > space;
+//generate toolpath for sequence 
+pair<list<string>, list<string> > planOperation(VolumetricModel &model, ToolConfig toolConfig, list<Orientation> tentativeSequence, int lMax, int bMax, int hMax, string folderName, bool printVolume){
 	
-	ll calculateMachinableVolume(string orientation){
-		/*	
-			input: orientation to machine in 
-			purpose: it simulates a cut and adds up all the voxels that would be removed while machining
-			output: volume, i.e. number of voxels machined
-		*/
-		int x, y, z;
-		ll volume=0;
-		
-		if(orientation == "xy+"){
-			for(x=xmin; x<=xmax; x++){
-				for(y=ymin; y<=ymax; y++){
-					for(z=zmax; z>=zmin; z--){
-						if(space[x][y][z] == true)
-							break;
-						else if(space[x][y][z] == false)
-							volume += 1;
-					}
-					
-				}
-			}
-		}
-		else if(orientation == "xy-"){
-			for(x=xmin; x<=xmax; x++){
-				for(y=ymin; y<=ymax; y++){
-					for(z=zmin; z<=zmax; z++){
-						if(space[x][y][z] == true){
-							break;
-						}
-						else if(space[x][y][z] == false)
-							volume += 1;
-					}
-				}
-			}	
-		}
-		else if(orientation == "yz+"){
-			for(y=ymin; y<=ymax; y++){
-				for(z=zmin; z<=zmax; z++){
-					for(x= xmax; x>=xmin; x--){
-						if(space[x][y][z] == true)
-							break;	
-						else if(space[x][y][z] == false)
-							volume += 1;
-					}		
-					
-				}
-			}
-		} 
-		else if(orientation == "yz-"){
-			for(y=ymin; y<=ymax; y++){
-				for(z=zmin; z<=zmax; z++){
-					for(x= xmin; x<=xmax; x++){
-						if(space[x][y][z] == true){
-							break;	
-						}
-						else if(space[x][y][z] == false)
-							volume += 1;
-					}		
-					
-				}
-			}
-		}
-		else if(orientation == "xz+"){
-			for(x=xmin; x<=xmax; x++){
-				for(z=zmin; z<=zmax; z++){
-					for(y=ymax; y>=ymin; y--){
-						if(space[x][y][z] == true)
-							break;	
-						else if(space[x][y][z] == false)
-							volume += 1;
-					}
-					
-				}
-			}
-		}
-		else if(orientation == "xz-"){
-			for(x=xmin; x<=xmax; x++){
-				for(z=zmin; z<=zmax; z++){
-					for(y=ymin; y<=ymax; y++){
-						if(space[x][y][z] == true)
-							break;	
-						else if(space[x][y][z] == false)
-							volume += 1;
-					}
-					
-				}
-			}
-		}
+	int xmax = model.xmax, ymax = model.ymax, zmax = model.zmax;
 
-		return volume;
-	}
 
-	int fillMachinableVolume(string orientation, Matrix heightmap){
-		//Optimization: this function isnt required since this job can be done while calculating machinable volume 
+	list<Orientation> trueSequence;
 
-		int x, y, z;
-		int machinedVolume=0;
-		
-		if(orientation == "xy+"){
-			for(x=xmin; x<=xmax; x++){
-				for(y=ymin; y<=ymax; y++){
-					for(z=zmax; z>=heightmap[x][y]; z--){
-						if(space[x][y][z] == false){
-							machinedVolume +=1;
-						}
-						space[x][y][z] = 2;
-						
-					}
-					//machinedVolume += (zmax-heightmap[x][y]-1);
-				}
-			}
-		}
-		else if(orientation == "xy-"){
-			for(x=xmin; x<=xmax; x++){
-				for(y=ymin; y<=ymax; y++){
-					for(z=zmin; z<=zmax-heightmap[x][y]; z++){
-						if(space[x][y][z] == false){
-							machinedVolume +=1;
-						}
-						space[x][y][z] = 2;
-					}
-					// machinedVolume += (heightmap[x][y]-1);
-				}
-			}	
-		}
-		else if(orientation == "yz+"){
-			for(y=ymin; y<=ymax; y++){
-				for(z=zmin; z<=zmax; z++){
-					for(x= xmax; x>=heightmap[y][z]; x--){
-						if(space[x][y][z] == false){
-							machinedVolume +=1;
-						}
-						space[x][y][z] = 2;
-					}	
-					// machinedVolume += (xmax-heightmap[y][z]-1);	
-				}
-			}
-		} 
-		else if(orientation == "yz-"){
-			for(y=ymin; y<=ymax; y++){
-				for(z=zmin; z<=zmax; z++){
-					//cout<<"("<<y<<","<<z<<"): ";
-					for(x= xmin; x<=xmax- heightmap[y][z]; x++){
-						if(space[x][y][z] == false){
-							machinedVolume +=1;
-							//cout<<x<<" ";
-						}
-						
-						space[x][y][z] = 2;
-					}		
-					//cout<<"\n";
-					// machinedVolume += (heightmap[y][z]-1);
-				}
+	list<string> toolpathSet;
 
-			}
-		}
-		else if(orientation == "xz+"){
-			for(x=xmin; x<=xmax; x++){
-				for(z=zmin; z<=zmax; z++){
-					for(y=ymax; y>=heightmap[x][z]; y--){	
-						if(space[x][y][z] == false){
-							machinedVolume +=1;
-						}
-						space[x][y][z] = 2;
-					}
-					// machinedVolume += (ymax-heightmap[x][z]-1);
-				}
-			}
-		}
-		else if(orientation == "xz-"){
-			for(x=xmin; x<=xmax; x++){
-				for(z=zmin; z<=zmax; z++){
-					for(y=ymin; y<=ymax- heightmap[x][z]; y++){
-						if(space[x][y][z] == false){
-							machinedVolume +=1;
-						}
-						space[x][y][z] = 2;
-					}
-					// machinedVolume += (heightmap[x][z]-1);		
-				}
-			}
-		}
-		return machinedVolume;
-	}
-
-	Matrix toHeightmap(string orientation){
-		//Optimization: this function isnt required since this job can be done while calculating machinable volume 
-		/*
-			input: orientation in which heightmap is to be created 
-			purpose: it converts the give  volumetric model to heightmap in an orientation 
-			output: heightmap
-		*/
-		int x, y, z;
-		Matrix heightmap;
-		
-		if(orientation == "xy+"){
-			heightmap = *(new Matrix(xmax-xmin+1, vector<int>(ymax-ymin+1, 0)));
-			for(x=xmin; x<=xmax; x++){
-				for(y=ymin; y<=ymax; y++){
-					for(z=zmax; z>=zmin; z--){
-						if(space[x][y][z] == true){
-							heightmap[x][y] = z - zmin + 1;
-							break;
-						}
-					}
-				}
-			}
-		}
-		else if(orientation == "xy-"){
-			heightmap = *(new Matrix(xmax-xmin+1, vector<int>(ymax-ymin+1, 0)));
-			for(x=xmin; x<=xmax; x++){
-				for(y=ymin; y<=ymax; y++){
-					for(z=zmin; z<=zmax; z++){
-						if(space[x][y][z] == true){
-							heightmap[x][y] = zmax - z +1;
-							break;
-						}
-						
-					}
-				}
-			}	
-		}
-		else if(orientation == "yz+"){
-			heightmap = *(new Matrix(ymax-ymin+1, vector<int>(zmax-zmin+1, 0)));
-			for(y=ymin; y<=ymax; y++){
-				for(z=zmin; z<=zmax; z++){
-					for(x= xmax; x>=xmin; x--){
-						if(space[x][y][z] == true){
-							heightmap[y][z] = x - xmin +1;
-							break;	
-						}
-						
-					}		
-				}
-			}
-		} 
-		else if(orientation == "yz-"){
-			heightmap = *(new Matrix(ymax-ymin+1, vector<int>(zmax-zmin+1, 0)));
-			for(y=ymin; y<=ymax; y++){
-				for(z=zmin; z<=zmax; z++){
-					for(x= xmin; x<=xmax; x++){
-						if(space[x][y][z] == true){
-							heightmap[y][z] = xmax + 1 - x;
-							break;	
-						}
-					}		
-				}
-			}
-		}
-		else if(orientation == "xz+"){
-			heightmap = *(new Matrix(xmax-xmin+1, vector<int>(zmax-zmin+1, 0)));
-			for(x=xmin; x<=xmax; x++){
-				for(z=zmin; z<=zmax; z++){
-					for(y=ymax; y>=ymin; y--){
-						if(space[x][y][z] == true){
-							heightmap[x][z] = y - ymin + 1;
-							break;	
-						}
-					}
-				}
-			}
-		}
-		else if(orientation == "xz-"){
-			heightmap = *(new Matrix(xmax-xmin+1, vector<int>(zmax-zmin+1, 0)));
-			for(x=xmin; x<=xmax; x++){
-				for(z=zmin; z<=zmax; z++){
-					for(y=ymin; y<=ymax; y++){
-						if(space[x][y][z] == true){
-							heightmap[x][z] = ymax -y +1;
-							break;		
-						}
-					}
-				}
-			}
-		}
-		return heightmap;
-	}
-
+	int machinedVolume=0; 
 	
-	//---------obsolete: consider deleting it!-------
-	// //written for testing volume calculation
-	// VolumetricModel(vector<vector<int> > heightmap)	{
-	// 	/*For testing purpose, it converts given heightmap to a volumetric model*/
-	// 	xmin = 0; xmax = heightmap.size()-1;
-	// 	ymin = 0; ymax = heightmap[0].size()-1;
-	// 	zmin = 0; zmax = calculateMaxZ(heightmap)-1;
-	// 	int x, y, z;
-	// 	space = *(new vector<vector<vector<bool> > >(xmax-xmin+1, 
-	// 							vector<vector<bool> >(ymax-ymin+1, 
-	// 									vector<bool>(zmax - zmin+1, false))));
-
-	// 	for(x=xmin; x<=xmax; x++){
-	// 		for(y=ymin; y<=ymax; y++){
-	// 			for(z=zmin; z<heightmap[x][y]; z++){
-	// 				space[x][y][z] = true;
-	// 			}
-	// 		}
-	// 	}
-	// }
-
-	VolumetricModel(vector<vector<vector<int> > > voxels, int lMax, int bMax, int hMax){
-		/*input: 3d vector array 
-		  purpose: convert it to volumetric object
-		  output:
-		 */
-		xmin =0; xmax = lMax-1;
-		ymin =0; ymax = bMax-1;
-		zmin =0; zmax = hMax-1;
-
-		space = voxels;
-	}
-
-	void print(ofstream &fileStream){
-		/*input: None
-		  purpose: prints voxels for debugging purpose 
-		  output: None
-		 */
+	for(list<Orientation>::iterator it = tentativeSequence.begin(); it != tentativeSequence.end(); it++){
 		
-		int x, y,z;
-		for(z=zmin; z<=zmax; z++){
-			for(x=xmin; x<=xmax; x++){
-				for(y=ymin; y<=ymax; y++){
-					if(space[x][y][z] == true){
-						fileStream << std::hex << 0x1;	
-					}
-					else if(space[x][y][z] == false){
-						fileStream << std::hex << 0x0;	
-					}
-					else{
-						fileStream << std::hex << 0x2;	
-					}
-				}
-				
-			}
+		Orientation currentOrientation = (*it);
+		int machinableVolume = model.calculateMachinableVolume(currentOrientation);
+		int machinedVolumeInOrientation = 0;
+		
+		if(machinableVolume != 0){
 			
-		}
+			/* Generate HeightMap */
+			HeightMap heightMap = model.toHeightmap(currentOrientation);
 		
+			int i, j;
+			
+			RegionMap regionMap;
+			
+			Graph graph = toGraph(heightMap, toolConfig, regionMap);
+
+			string toolpath;
+			
+			if(*it == "xy+" || *it == "xy-"){
+				toolConfig.safeHeight = hMax +2;
+				toolpath = toToolpath(model, toolConfig, currentOrientation, graph, regionMap, model.zMax + 1, heightMap);
+			}
+			else if(*it == "yz+" || *it == "yz-"){
+				toolConfig.safeHeight = lMax +2;
+				toolpath = toToolpath(model, currentOrientation, graph, regionmap, safeHeight, model.xMax + 1, heightMap);	
+			}
+			else if(*it == "xz+" || *it == "xz-"){
+				toolConfig.safeHeight = bMax +2;
+				toolpath = toToolpath(model, currentOrientation, graph, regionmap, safeHeight, model.yMax + 1, heightMap);		
+			}	
+			
+			toolpathSet.push_back(toolpath);
+
+			/* Filling machined volume so that it would be outta consideration in next orientation */
+			machinedVolumeInOrientation = model.fillMachinableVolume(currentOrientation, heightMap);
+			
+			if(machinedVolumeInOrientation){
+				if(printVolume){
+					ofstream myfile;
+			 		myfile.open ("./" + folderName + "/" + currentOrientation + ".interim.raw", ios::binary );
+			 		model.print(myfile);
+				}
+				trueSequence.push_back(currentOrientation);
+			}
+
+			machinedVolume += machinedVolumeInOrientation;
+			
+		}		
 	}
-};
+	if(machinedVolume != ((xmax+1)*(ymax+1)*(zmax+1) - objectsVolume)){
+	cout<<"xmax:"<<xmax<<"\n";
+	cout<<"ymax:"<<ymax<<"\n";
+	cout<<"zmax:"<<zmax<<"\n";
+	cout<<"Volume to be machined:"<<(xmax+1)*(ymax+1)*(zmax+1) - objectsVolume<<"\n";
+	cout<<"Machined Volume: "<< machinedVolume<<"\n";
+	cout<<"Sorry , the object cannot be machined\n";
+	
+	return make_pair(trueSequence, toolpathSet);
+}
 
 
 
 
-Lop findNeighbour(int a, int b, int N, int M){
-	Lop neighbour;
+list<Point_2D> findNeighbour(int a, int b, int N, int M){
+	list<Point_2D> neighbour;
 
 	if(a+1<N){
 		neighbour.push_back(make_pair(a+1, b));
@@ -397,7 +116,7 @@ void insertEdge(Graph &graph, int r1, int r2, int h1, int h2){
 		if(it == iter.end()){
 			//add r1, r2
 			graph[r1].second.push_back(r2);
-			insertEdge(graph, r2, r1, h2, h1);	
+			insertEdge(graph, r2, r1, h2, h1);
 		}
 	}
 	catch(out_of_range){
@@ -409,6 +128,7 @@ void insertEdge(Graph &graph, int r1, int r2, int h1, int h2){
 
 }
 
+/*
 Matrix calculateMachinability(Matrix heightmap, int toolRadius, int toolLength){
 	int N = heightmap.size(), M = heightmap[0].size(); 
 	int n, m, x, y;
@@ -440,7 +160,9 @@ Matrix calculateMachinability(Matrix heightmap, int toolRadius, int toolLength){
 	}
 	return machinable;
 }
+*/
 
+/*
 void calculateNewHeightForPoint(Matrix &heightmap, Matrix &heightmapNew, Stack &Qnew, int n, int m, int toolRadius, int toolLength){
 	int N = heightmap.size(), M = heightmap[0].size(); 
 	int x, y;
@@ -472,8 +194,9 @@ void calculateNewHeightForPoint(Matrix &heightmap, Matrix &heightmapNew, Stack &
 	}	
 	
 }
+*/
 
-
+/*
 Matrix makeHeightmapMachinable(Matrix heightmap, int toolRadius, int toolLength){
 	int N = heightmap.size(), M = heightmap[0].size(); 
 	int n, m, x, y;
@@ -522,7 +245,6 @@ Matrix makeHeightmapMachinable(Matrix heightmap, int toolRadius, int toolLength)
 	}
 
 	
-	
 	while(!Q.empty()){
 		Stack Qnew;
 		heightmap = heightmapNew;
@@ -563,70 +285,57 @@ Matrix makeHeightmapMachinable(Matrix heightmap, int toolRadius, int toolLength)
 	}
 	return heightmapNew;	
 }
+*/
 
 
-
-pair<Graph, Matrix > toGraph(Matrix &heightmap, int toolRadius, int toolLength){
-	int N = heightmap.size(), M = heightmap[0].size(); 
-	Matrix regionmap(N, vector<int >(M, 0));
-	Graph graph;
+Graph toGraph(HeightMap heightMap, ToolConfig toolConfig, RegionMap &regionMap){
+	
+	/* Initiating regionMap */
+	regionMap.first = Matrix(heightMap.second.first, vector<int >(heightMap.second.second, 0));
+	regionMap.second.first = heightMap.second.first;
+	regionMap.second.second = heightMap.second.second;
+	
+	Graph graph
 	Stack globalStack, localStack;
-	int regionNo;
-	int i, j, a, b, x, y;
-	pair<int, int> pr;
-	Lop neighbour;
-
-	heightmap = makeHeightmapMachinable(heightmap, toolRadius, toolLength);
+	int regionNumber = 0;
+	
+	/* Keep this for future reference */
+	//heightmap = makeHeightmapMachinable(heightmap, toolRadius, toolLength);
+	
 	globalStack.push(make_pair(0, 0));
-	regionNo = 0;
-
-
-	 // Matrix machinable = calculateMachinability(heightmap, toolRadius, toolLength);
-	 // int n, m;// N = machinable.size(), M = machinable[0].size();
-		// for(n=0; n<N; n++){
-		// 	// cout<<"m ";
-		// 	for(m=0; m<M; m++){
-				
-		// 			cout<<machinable[n][m]<<" ";
-		// 	}
-		// 	cout<<"\n";
-		// }
-		// cout<<"\n";
 
 	while(!globalStack.empty()){
-		pr = globalStack.top(); globalStack.pop();
-		i = pr.first;
-		j = pr.second;
-		if(regionmap[i][j] == 0){
+		Point_2D currentPoint = globalStack.top(); 
+		globalStack.pop();
+		
+		if(regionmap[currentPoint.first][currentPoint.second] == 0){
 			regionNo += 1;
 			localStack = Stack();
-			localStack.push(make_pair(i, j));
+			localStack.push(make_pair(currentPoint.first, currentPoint.second));
 
 			while(!localStack.empty()){
-				pr = localStack.top(); localStack.pop();
-				a = pr.first;
-				b = pr.second;
-				if(regionmap[a][b] == 0){
+				currentPoint = localStack.top(); 
+				localStack.pop();
+				
+				if(regionmap[currentPoint.first][currentPoint.second] == 0){
 					regionmap[a][b] = regionNo;
 
-					neighbour = findNeighbour(a,b, N, M);
-					Lop::iterator it;
-					for(it = neighbour.begin(); it != neighbour.end(); it++){
-						x = (*it).first;
-						y = (*it).second;
+					list<Point_2D> neighbour = findNeighbour(currentPoint.first, currentPoint.second, regionMap.second.first, regionMap.second.second);
+					
+					for(list<Point_2D>::iterator it = neighbour.begin(); it != neighbour.end(); it++){
+						Point_2D currentNeighbour = (*it);
 
-						if(heightmap[a][b] == heightmap[x][y]){
-							if(regionmap[x][y] == 0){
-								localStack.push(make_pair(x,y));
+						if(heightmap[currentPoint.first][currentPoint.second] == heightmap[currentNeighbour.first][currentNeighbour.second]){
+							if(regionmap[currentPoint.first][currentPoint.second] == 0){
+								localStack.push(make_pair(currentPoint.first, currentPoint.second));
 							}
 						}
 						else{
 							if(regionmap[x][y] == 0){
-								globalStack.push(make_pair(x,y));
+								globalStack.push(make_pair(currentNeighbour.first, currentNeighbour.second));
 							}
 							else{
-								insertEdge(graph, regionmap[x][y], regionmap[a][b], heightmap[x][y], heightmap[a][b]);
-								//cout<<regionmap[x][y]<<"( "<<x<<","<<y<<") -> "<<regionmap[a][b]<<"("<<a<<","<<b<<")\n";
+								insertEdge(graph, regionmap[currentNeighbour.first][currentNeighbour.second], regionmap[currentPoint.first][currentPoint.second], heightmap[currentNeighbour.first][currentNeighbour.second], heightmap[currentPoint.first][currentPoint.second]);
 							}
 						}
 					}
@@ -634,15 +343,14 @@ pair<Graph, Matrix > toGraph(Matrix &heightmap, int toolRadius, int toolLength){
 			}	
 		}
 	}
-	
-	return make_pair(graph, regionmap);
+	return graph;
 }
 
 //it converts heightmap to depthmap by subtracting maximum height with all the heights 
 void toDepthGraph(Graph &graph, int maxHeight){
-	Graph::iterator it;
-
-	for(it = graph.begin(); it != graph.end(); it++){
+	
+	/* This loop basically converts height to depth and then smokes weed */
+	for(Graph::iterator it = graph.begin(); it != graph.end(); it++){
 		((it->second).first) = maxHeight - ((it->second).first);
 	}
 
@@ -913,16 +621,16 @@ void processGraph(Graph &graph , AdjList &vlist, int depth){
 }
 
 //converts graph to toolpath using connected component and zigzag path generation strategy
-string toToolpath(VolumetricModel &model, string orientation, Graph &graph, Matrix &regionmap,int safeHeight, int maxHeight, Matrix heightMap, int TOOL_DIA, int depthPerPass, int feedrate){
-	//string toolpath = "G21\nG90\nG92 X0 Y0 Z" + to_string(maxHeight) + "\n";
+string toToolpath(VolumetricModel &model, ToolConfig toolConfig, Orientation orientation, Graph &graph, RegionMap &regionmap, int maxHeight, HeightMap heightMap){
+	
 	string toolpath = "G21\nG90\nF" + to_string(feedrate) + "\n" ;
 	int u;
-	int i;
+	
 	int noOfRegion = graph.size();
 	int currentHeight = maxHeight;
+	
 	IntMap regionCurrentHeights;
-
-	for(i=1; i<=noOfRegion; i++){
+	for(int i=1; i<=noOfRegion; i++){
 		regionCurrentHeights[i] = maxHeight;
 	}
 
