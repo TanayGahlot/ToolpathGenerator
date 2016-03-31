@@ -1,17 +1,21 @@
+#include <vector>
+
+#include "structures.h"
+
+
 class VolumetricModel{
 	public:
 
 		int xmax, ymax, zmax;
 		int xmin, ymin, zmin;
-		int emptyVolume;
 		int volume;
-		vector<vector<vector<int> >> model;
+		vector<vector<vector<int> > > model;
 		
 		VolumetricModel(vector<vector<vector<int> > > voxels, int lMax, int bMax, int hMax);
-		int getEmptyVolume();
+		int getVolume();
 		ll calculateMachinableVolume(string orientation);
-		int fillMachinableVolume(string orientation, Matrix heightmap);
-		Matrix toHeightmap(string orientation);
+		int fillMachinableVolume(Orientation orientation, HeightMap heightmap);
+		HeightMap toHeightmap(string orientation);
 		void print(ofstream &fileStream);
 };
 
@@ -25,10 +29,10 @@ void VolumetricModel::print(ofstream &fileStream){
 	for(z=zmin; z<=zmax; z++){
 		for(x=xmin; x<=xmax; x++){
 			for(y=ymin; y<=ymax; y++){
-				if(space[x][y][z] == true){
+				if(model[x][y][z] == true){
 					fileStream << std::hex << 0x1;	
 				}
-				else if(space[x][y][z] == false){
+				else if(model[x][y][z] == false){
 					fileStream << std::hex << 0x0;	
 				}
 				else{
@@ -46,24 +50,23 @@ VolumetricModel::VolumetricModel(vector<vector<vector<int> > > voxels, int lMax,
 
 	model = voxels;
 	
-	emptyVolume = getEmptyVolume();
-	volume = lMax*bMax*hMax - emptyVolume;
+	volume = getVolume();
 }
 
-int VolumetricModel::getEmptyVolume(){
-	int emptyVolume = 0;
+int VolumetricModel::getVolume(){
+	int objVolume = 0;
 	
 	/* Calculate Empty Space in the Volume */
-	for(int hIter = 0; hIter<hMax; hIter++){
-		for(int lIter = 0; lIter<lMax; lIter++){
-			for(int bIter = 0; bIter<bMax; bIter++){
-				if(voxels[lIter][bIter][hIter] = 0)
-					emptyVolume += 1;				
+	for(int zIter = zmin; zIter<=zmax; zIter++){
+		for(int xIter = xmin; xIter<=xmax; xIter++){
+			for(int yIter = ymin; yIter<=ymax; yIter++){
+				if(model[xIter][yIter][zIter] == 1)
+					objVolume += 1;				
 			}	
 		}
 	}
 	
-	return emptyVolume;
+	return objVolume;
 }
 	
 ll VolumetricModel::calculateMachinableVolume(Orientation orientation){
@@ -71,9 +74,9 @@ ll VolumetricModel::calculateMachinableVolume(Orientation orientation){
 	ll machinableVolume = 0;
 	
 	if(orientation == "xy+"){
-		for(x=xmin; x<=xmax; x++){
-			for(y=ymin; y<=ymax; y++){
-				for(z=zmax; z>=zmin; z--){
+		for(int x=xmin; x<=xmax; x++){
+			for(int y=ymin; y<=ymax; y++){
+				for(int z=zmax; z>=zmin; z--){
 					if(model[x][y][z] == true)
 						break;
 					else if(model[x][y][z] == false)
@@ -84,9 +87,9 @@ ll VolumetricModel::calculateMachinableVolume(Orientation orientation){
 		}
 	}
 	else if(orientation == "xy-"){
-		for(x=xmin; x<=xmax; x++){
-			for(y=ymin; y<=ymax; y++){
-				for(z=zmin; z<=zmax; z++){
+		for(int x=xmin; x<=xmax; x++){
+			for(int y=ymin; y<=ymax; y++){
+				for(int z=zmin; z<=zmax; z++){
 					if(model[x][y][z] == true){
 						break;
 					}
@@ -97,9 +100,9 @@ ll VolumetricModel::calculateMachinableVolume(Orientation orientation){
 		}	
 	}
 	else if(orientation == "yz+"){
-		for(y=ymin; y<=ymax; y++){
-			for(z=zmin; z<=zmax; z++){
-				for(x= xmax; x>=xmin; x--){
+		for(int y=ymin; y<=ymax; y++){
+			for(int z=zmin; z<=zmax; z++){
+				for(int x= xmax; x>=xmin; x--){
 					if(model[x][y][z] == true)
 						break;	
 					else if(model[x][y][z] == false)
@@ -110,9 +113,9 @@ ll VolumetricModel::calculateMachinableVolume(Orientation orientation){
 		}
 	} 
 	else if(orientation == "yz-"){
-		for(y=ymin; y<=ymax; y++){
-			for(z=zmin; z<=zmax; z++){
-				for(x= xmin; x<=xmax; x++){
+		for(int y=ymin; y<=ymax; y++){
+			for(int z=zmin; z<=zmax; z++){
+				for(int x= xmin; x<=xmax; x++){
 					if(model[x][y][z] == true){
 						break;	
 					}
@@ -124,9 +127,9 @@ ll VolumetricModel::calculateMachinableVolume(Orientation orientation){
 		}
 	}
 	else if(orientation == "xz+"){
-		for(x=xmin; x<=xmax; x++){
-			for(z=zmin; z<=zmax; z++){
-				for(y=ymax; y>=ymin; y--){
+		for(int x=xmin; x<=xmax; x++){
+			for(int z=zmin; z<=zmax; z++){
+				for(int y=ymax; y>=ymin; y--){
 					if(model[x][y][z] == true)
 						break;	
 					else if(model[x][y][z] == false)
@@ -137,9 +140,9 @@ ll VolumetricModel::calculateMachinableVolume(Orientation orientation){
 		}
 	}
 	else if(orientation == "xz-"){
-		for(x=xmin; x<=xmax; x++){
-			for(z=zmin; z<=zmax; z++){
-				for(y=ymin; y<=ymax; y++){
+		for(int x=xmin; x<=xmax; x++){
+			for(int z=zmin; z<=zmax; z++){
+				for(int y=ymin; y<=ymax; y++){
 					if(model[x][y][z] == true)
 						break;	
 					else if(model[x][y][z] == false)
@@ -162,7 +165,7 @@ int VolumetricModel::fillMachinableVolume(Orientation orientation, HeightMap hei
 	if(orientation == "xy+"){
 		for(x=xmin; x<=xmax; x++){
 			for(y=ymin; y<=ymax; y++){
-				for(z=zmax; z>=heightMap[x][y]; z--){
+				for(z=zmax; z>=heightMap.first[x][y]; z--){
 					if(model[x][y][z] == false){
 						machinedVolume +=1;
 					}
@@ -176,7 +179,7 @@ int VolumetricModel::fillMachinableVolume(Orientation orientation, HeightMap hei
 	else if(orientation == "xy-"){
 		for(x=xmin; x<=xmax; x++){
 			for(y=ymin; y<=ymax; y++){
-				for(z=zmin; z<=zmax-heightMap[x][y]; z++){
+				for(z=zmin; z<=zmax-heightMap.first[x][y]; z++){
 					if(model[x][y][z] == false){
 						machinedVolume +=1;
 					}
@@ -189,7 +192,7 @@ int VolumetricModel::fillMachinableVolume(Orientation orientation, HeightMap hei
 	else if(orientation == "yz+"){
 		for(y=ymin; y<=ymax; y++){
 			for(z=zmin; z<=zmax; z++){
-				for(x= xmax; x>=heightMap[y][z]; x--){
+				for(x= xmax; x>=heightMap.first[y][z]; x--){
 					if(model[x][y][z] == false){
 						machinedVolume +=1;
 					}
@@ -203,7 +206,7 @@ int VolumetricModel::fillMachinableVolume(Orientation orientation, HeightMap hei
 		for(y=ymin; y<=ymax; y++){
 			for(z=zmin; z<=zmax; z++){
 				//cout<<"("<<y<<","<<z<<"): ";
-				for(x= xmin; x<=xmax- heightMap[y][z]; x++){
+				for(x= xmin; x<=xmax- heightMap.first[y][z]; x++){
 					if(model[x][y][z] == false){
 						machinedVolume +=1;
 					}
@@ -219,7 +222,7 @@ int VolumetricModel::fillMachinableVolume(Orientation orientation, HeightMap hei
 	else if(orientation == "xz+"){
 		for(x=xmin; x<=xmax; x++){
 			for(z=zmin; z<=zmax; z++){
-				for(y=ymax; y>=heightMap[x][z]; y--){	
+				for(y=ymax; y>=heightMap.first[x][z]; y--){	
 					if(model[x][y][z] == false){
 						machinedVolume +=1;
 					}
@@ -232,7 +235,7 @@ int VolumetricModel::fillMachinableVolume(Orientation orientation, HeightMap hei
 	else if(orientation == "xz-"){
 		for(x=xmin; x<=xmax; x++){
 			for(z=zmin; z<=zmax; z++){
-				for(y=ymin; y<=ymax- heightMap[x][z]; y++){
+				for(y=ymin; y<=ymax- heightMap.first[x][z]; y++){
 					if(model[x][y][z] == false){
 						machinedVolume +=1;
 					}
@@ -260,7 +263,7 @@ HeightMap VolumetricModel::toHeightmap(Orientation orientation){
 		for(x=xmin; x<=xmax; x++){
 			for(y=ymin; y<=ymax; y++){
 				for(z=zmax; z>=zmin; z--){
-					if(space[x][y][z] == true){
+					if(model[x][y][z] == true){
 						HM[x][y] = z - zmin + 1;
 						break;
 					}
@@ -273,7 +276,7 @@ HeightMap VolumetricModel::toHeightmap(Orientation orientation){
 		for(x=xmin; x<=xmax; x++){
 			for(y=ymin; y<=ymax; y++){
 				for(z=zmin; z<=zmax; z++){
-					if(space[x][y][z] == true){
+					if(model[x][y][z] == true){
 						HM[x][y] = zmax - z +1;
 						break;
 					}
@@ -287,7 +290,7 @@ HeightMap VolumetricModel::toHeightmap(Orientation orientation){
 		for(y=ymin; y<=ymax; y++){
 			for(z=zmin; z<=zmax; z++){
 				for(x= xmax; x>=xmin; x--){
-					if(space[x][y][z] == true){
+					if(model[x][y][z] == true){
 						HM[y][z] = x - xmin +1;
 						break;	
 					}
@@ -301,7 +304,7 @@ HeightMap VolumetricModel::toHeightmap(Orientation orientation){
 		for(y=ymin; y<=ymax; y++){
 			for(z=zmin; z<=zmax; z++){
 				for(x= xmin; x<=xmax; x++){
-					if(space[x][y][z] == true){
+					if(model[x][y][z] == true){
 						HM[y][z] = xmax + 1 - x;
 						break;	
 					}
@@ -314,7 +317,7 @@ HeightMap VolumetricModel::toHeightmap(Orientation orientation){
 		for(x=xmin; x<=xmax; x++){
 			for(z=zmin; z<=zmax; z++){
 				for(y=ymax; y>=ymin; y--){
-					if(space[x][y][z] == true){
+					if(model[x][y][z] == true){
 						HM[x][z] = y - ymin + 1;
 						break;	
 					}
@@ -327,7 +330,7 @@ HeightMap VolumetricModel::toHeightmap(Orientation orientation){
 		for(x=xmin; x<=xmax; x++){
 			for(z=zmin; z<=zmax; z++){
 				for(y=ymin; y<=ymax; y++){
-					if(space[x][y][z] == true){
+					if(model[x][y][z] == true){
 						HM[x][z] = ymax -y +1;
 						break;		
 					}

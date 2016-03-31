@@ -11,11 +11,11 @@
 
 #include "model/structures.h"
 #include "model/ToolConfig.h"
-#include "model/HeightMap.hpp"
 #include "model/VolumetricModel.h"
-#include "toolpathGenerator.h"
-#include "sequenceGenerator.h"
 #include "voxelizer.h"
+#include "sequenceGenerator.h"
+#include "toolpathGenerator.h"
+
 
 int main(int argc, char **argv){
  
@@ -42,11 +42,11 @@ int main(int argc, char **argv){
 	list<string>::iterator it;
 	
 	/* Operation Planning for each Orientation */
-	pair<list<string>, list<string> > skk = toolpathGeneratorForSequence(model, toolConfig, tentativeSequence, lMax,bMax, hMax,folderName, printVolume);
+	pair<list<Orientation>, list<string> > skk = planOperation(model, toolConfig, tentativeSequence, folderName, printVolume);
 	list<string> sk = skk.second;
-	sequence = skk.first;
+	list<Orientation> sequence = skk.first;
 	
-	list<string>::iterator itt;
+	list<Orientation>::iterator itt;
 	itt = sequence.begin();
 
 	//writing sequence to the test file 
@@ -59,12 +59,7 @@ int main(int argc, char **argv){
  		myfile<<*it;
  		itt++;
  		myfile.close();
- 	}
-	
-	// // list<string> sk;
-	// // sk.push_back("xz+");
-	// // cout<< toolpathGeneratorForSequence(sk, model, TOOL_DIA, lMax, bMax, hMax);
-
+	}
 
 	return 0;
 }

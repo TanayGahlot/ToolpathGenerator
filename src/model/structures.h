@@ -1,3 +1,10 @@
+#include <iostream>
+#include <map>
+#include <list>
+#include <vector>
+
+using namespace std;
+
 typedef long long int ll;
 
 typedef string Orientation;
@@ -15,3 +22,5 @@ typedef list<int> AdjList;
 typedef map<int, pair<int, AdjList > > Graph;
 
 typedef map<int, int> IntMap;
+typedef map<int , bool> BoolDict;
+typedef stack<int> IntStack;
