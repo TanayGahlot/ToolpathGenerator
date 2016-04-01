@@ -77,32 +77,48 @@ Graph toGraph(HeightMap heightMap, ToolConfig toolConfig, RegionMap &regionMap){
 	/* Keep this for future reference */
 	//heightmap = makeHeightmapMachinable(heightmap, toolRadius, toolLength);
 	
+	/* Initiate the global stack */
 	globalStack.push(make_pair(0, 0));
 
 	while(!globalStack.empty()){
+		
+		/* Select the point to be processed from new region */
 		Point_2D currentPoint = globalStack.top(); 
 		globalStack.pop();
 		
+		/* If the point is unprocessed */
 		if(regionMap.first[currentPoint.first][currentPoint.second] == 0){
+
 			regionNumber += 1;
 			localStack = Stack();
+			
+			/* Initiate local stack for processing next region */
 			localStack.push(make_pair(currentPoint.first, currentPoint.second));
 
 			while(!localStack.empty()){
+				/* Get the point to be processed from current region */
 				currentPoint = localStack.top(); 
 				localStack.pop();
 				
+				/* If point is not already processed */
 				if(regionMap.first[currentPoint.first][currentPoint.second] == 0){
+					
+					/* Associate the point to current region */
 					regionMap.first[currentPoint.first][currentPoint.second] = regionNumber;
 
+					/* Find neighbours of curret point */
 					list<Point_2D> neighbour = findNeighbour(currentPoint.first, currentPoint.second, regionMap.second.first, regionMap.second.second);
+					
 					
 					for(list<Point_2D>::iterator it = neighbour.begin(); it != neighbour.end(); it++){
 						Point_2D currentNeighbour = (*it);
-
+						
+						/* Set point for future consideration if neighbour is not of the height of current region
+						 * else push it in local queue for processing
+						 */
 						if(heightMap.first[currentPoint.first][currentPoint.second] == heightMap.first[currentNeighbour.first][currentNeighbour.second]){
-							if(regionMap.first[currentPoint.first][currentPoint.second] == 0){
-								localStack.push(make_pair(currentPoint.first, currentPoint.second));
+							if(regionMap.first[currentNeighbour.first][currentNeighbour.second] == 0){
+								localStack.push(make_pair(currentNeighbour.first, currentNeighbour.second));
 							}
 						}
 						else{
@@ -110,6 +126,7 @@ Graph toGraph(HeightMap heightMap, ToolConfig toolConfig, RegionMap &regionMap){
 								globalStack.push(make_pair(currentNeighbour.first, currentNeighbour.second));
 							}
 							else{
+								/* Adjust graph for identified bordering region */
 								insertEdge(graph, regionMap.first[currentNeighbour.first][currentNeighbour.second], regionMap.first[currentPoint.first][currentPoint.second], heightMap.first[currentNeighbour.first][currentNeighbour.second], heightMap.first[currentPoint.first][currentPoint.second]);
 							}
 						}
@@ -118,11 +135,6 @@ Graph toGraph(HeightMap heightMap, ToolConfig toolConfig, RegionMap &regionMap){
 			}
 		}
 	}
-	for(int i=0; i<regionMap.second.first; i++){
-		cout<<"\n";
-		for(int j=0; j<regionMap.second.second; j++)
-			cout<<regionMap.first[i][j]<<" ";
-	}
 	
 	return graph;
 }
@@ -130,7 +142,7 @@ Graph toGraph(HeightMap heightMap, ToolConfig toolConfig, RegionMap &regionMap){
 //it converts heightmap to depthmap by subtracting maximum height with all the heights 
 void toDepthGraph(Graph &graph, int maxHeight){
 	
-	/* This loop basically converts height to depth and then smokes weed */
+	/* This loop basically converts height to depth */
 	for(Graph::iterator it = graph.begin(); it != graph.end(); it++){
 		((it->second).first) = maxHeight - ((it->second).first);
 	}
@@ -139,44 +151,51 @@ void toDepthGraph(Graph &graph, int maxHeight){
 
 //picks the minimum depth node 
 int pickMin(Graph &graph){
-	Graph::iterator it = graph.begin();
-	int u = it->first;
-	int minElement = (it->second).first;
-	for(it = graph.begin(); it != graph.end(); it++){
-		if((it->second).first < minElement){
-			minElement = (it->second).first;
-			u = it->first;
+	
+	Graph::iterator graphIter = graph.begin();
+	
+	/* Store first node as min Node and its depth as min Value */
+	int minNode = graphIter->first;
+	int minValue = (graphIter->second).first;
+	
+	while(graphIter != graph.end()){
+		/* check if current node is minimum and if true set current node as minimum */
+		if((graphIter->second).first < minValue){
+			minValue = (graphIter->second).first;
+			minNode = graphIter->first;
 		}
+		graphIter++;
 	}
-	return u;
+	return minNode;
 }
 
 //finds all the nodes connected to "u" 
-AdjList connected(Graph &graph, int u){
-	IntStack stack;
-	AdjList vlist;
-	BoolDict explored;
-	AdjList::iterator neighbour;
-	Graph::iterator it;
-	int ui;
-
-	stack.push(u);
+AdjList connected(Graph &graph, int minNode){
 	
-	for(it = graph.begin(); it != graph.end(); it++){
+	IntStack stack;
+	AdjList vertexList;
+	BoolDict explored;
+
+	stack.push(minNode);
+	
+	for(Graph::iterator it = graph.begin(); it != graph.end(); it++){
 		explored[it->first] = false;
 	}
 	
 	while(stack.size() != 0){
-		ui = stack.top(); stack.pop();
-		if(!explored[ui]){
-			vlist.push_back(ui);
-			explored[ui] = true;
-			for(neighbour = graph[ui].second.begin(); neighbour != graph[ui].second.end(); neighbour++){
-				stack.push(*neighbour);
+		int currentNode = stack.top(); 
+		stack.pop();
+		
+		if(!explored[currentNode]){
+			vertexList.push_back(currentNode);
+			explored[currentNode] = true;
+			
+			for(AdjList::iterator it = graph[currentNode].second.begin(); it != graph[currentNode].second.end(); it++){
+				stack.push(*it);
 			}
 		}		
 	}
-	return vlist;
+	return vertexList;
 }
 
 //writes gcode by taking path position 
@@ -250,8 +269,6 @@ bool callItMagic(VolumetricModel &model, int i, int j, int dep, string orientati
 			return true;
 	}
 }
-
-//#include "contour_tracing.h"
 
 //machines connected regions 
 string machine(VolumetricModel &model, string orientation, AdjList vlist, Matrix regionmap, int depth, int noOfRegion, int regionCurrentHeight, int safeHeight, int maxHeight, int TOOL_DIA, int depthPerPass){
@@ -379,138 +396,104 @@ void displayGraph(Graph &graph){
 }
 
 //it updates the graph depth info after machining 
-void processGraph(Graph &graph , AdjList &vlist, int depth){
-	AdjList::iterator it; 
-	AdjList::iterator itt, neighbour, toDelete;
-	AdjList zeroList;
+void processGraph(Graph &graph , AdjList &vertexList, int depth){
 
-	for(it = vlist.begin(); it!= vlist.end(); it ++){
+	AdjList zeroDepthList;
+
+	/* Reduce depth of all nodes in vertex list and collect all the nodes with zero depth */
+	for(AdjList::iterator it = vertexList.begin(); it!= vertexList.end(); it++){
 		graph[*it].first = graph[*it].first - depth; 
 		if(graph[*it].first == 0){
-			zeroList.push_back(*it);
+			zeroDepthList.push_back(*it);
 		}
 	}
 
-	for(itt = zeroList.begin(); itt!= zeroList.end(); itt++){
-		for(neighbour = graph[*itt].second.begin(); neighbour != graph[*itt].second.end(); neighbour++){
-			toDelete = find(graph[*neighbour].second.begin(), graph[*neighbour].second.end(), *itt);
-			graph[*neighbour].second.erase(toDelete);
-		}
-		graph.erase(*itt);
+	/* This loop finds connected nodes to each zero depth node and then removes that particular zero depth node from all their adjacency lists */
+	for(AdjList::iterator it = zeroDepthList.begin(); it!= zeroDepthList.end(); it++){
+		for(AdjList::iterator connected = graph[*it].second.begin(); connected != graph[*it].second.end(); connected++){
+			
+			AdjList::iterator toBeDeleted = find(graph[*connected].second.begin(), graph[*connected].second.end(), (*it));
+			graph[*connected].second.erase(toBeDeleted);
+		}	
+		graph.erase(*it);
 	}
-	
 }
 
 //converts graph to toolpath using connected component and zigzag path generation strategy
 string toToolpath(VolumetricModel &model, ToolConfig toolConfig, Orientation orientation, Graph &graph, RegionMap &regionMap, int maxHeight, HeightMap heightMap){
 	
 	string toolpath = "G21\nG90\nF" + to_string(toolConfig.feedRate) + "\n" ;
-	int u;
 	
-	int noOfRegion = graph.size();
+	int numberOfRegions = graph.size();
 	int currentHeight = maxHeight;
 	
 	IntMap regionCurrentHeights;
-	for(int i=1; i<=noOfRegion; i++){
+	for(int i=1; i<=numberOfRegions; i++){
 		regionCurrentHeights[i] = maxHeight;
 	}
 
-	toDepthGraph(graph, maxHeight);
-
 	toolpath += "G1 Z2\n";
+	
+	/* Operation Sequencing Algorithm */
 	while(graph.size() != 0){
-		u = pickMin(graph);
+		
+		/* Pick minimum depth node */
+		int minNode = pickMin(graph);
 
-		AdjList vlist = connected(graph, u);
-		//toolpath += generate_toolpath_with_compatibility(model, orientation, vlist, regionMap.first, graph[u].first, noOfRegion, regionCurrentHeights[u], toolConfig.safeHeight,  maxHeight, heightMap.first, toolConfig.toolDiameter, toolConfig.stepSize);
-		toolpath += machine(model, orientation, vlist, regionMap.first, graph[u].first, noOfRegion, regionCurrentHeights[u], toolConfig.safeHeight,  maxHeight, toolConfig.toolDiameter, toolConfig.stepSize);
+		/* Get all nodes connected to current node */
+		AdjList vertexList = connected(graph, minNode);
+		
+		/* Machine all the nodes to the respective height */
+		toolpath += machine(model, orientation, vertexList, regionMap.first, graph[minNode].first, numberOfRegions, regionCurrentHeights[minNode], toolConfig.safeHeight,  maxHeight, toolConfig.toolDiameter, toolConfig.stepSize);
 
-		AdjList::iterator it;
-		for(it = vlist.begin(); it!= vlist.end(); it++){
-			regionCurrentHeights[*it] -= graph[u].first;
+		/* Reduce regionCurrentHeight of all connected vertices by the depth of minNode */
+		for(AdjList::iterator it = vertexList.begin(); it!= vertexList.end(); it++){
+			regionCurrentHeights[*it] -= graph[minNode].first;
 		}
 
-		processGraph(graph, vlist, graph[u].first); 
-		
+		processGraph(graph, vertexList, graph[minNode].first);
 	}	
 	return toolpath;
 }
 
 
 //generate toolpath for sequence 
-pair<list<string>, list<string> > planOperation(VolumetricModel &model, ToolConfig toolConfig, list<Orientation> tentativeSequence, string folderName, bool printVolume){
+string planOperation(VolumetricModel &model, ToolConfig toolConfig, Orientation orientation, HeightMap &heightMap){
 	
 	int xmax = model.xmax, ymax = model.ymax, zmax = model.zmax;
 
-
-	list<Orientation> trueSequence;
-
-	list<string> toolpathSet;
-
-	int machinedVolume=0; 
+	RegionMap regionMap;
 	
-	for(list<Orientation>::iterator it = tentativeSequence.begin(); it != tentativeSequence.end(); it++){
-		
-		Orientation currentOrientation = (*it);
-		int machinableVolume = model.calculateMachinableVolume(currentOrientation);
-		int machinedVolumeInOrientation = 0;
-		
-		if(machinableVolume != 0){
-			
-			/* Generate HeightMap */
-			HeightMap heightMap = model.toHeightmap(currentOrientation);
-		
-			int i, j;
-			
-			RegionMap regionMap;
-			
-			Graph graph = toGraph(heightMap, toolConfig, regionMap);
-			
-			string toolpath;
-			
-			if(*it == "xy+" || *it == "xy-"){
-				toolConfig.safeHeight = model.zmax +2;
-				toolpath = toToolpath(model, toolConfig, currentOrientation, graph, regionMap, model.zmax + 1, heightMap);
-			}
-			else if(*it == "yz+" || *it == "yz-"){
-				toolConfig.safeHeight = model.xmax +2;
-				toolpath = toToolpath(model, toolConfig, currentOrientation, graph, regionMap, model.xmax + 1, heightMap);	
-			}
-			else if(*it == "xz+" || *it == "xz-"){
-				toolConfig.safeHeight = model.ymax +2;
-				toolpath = toToolpath(model, toolConfig, currentOrientation, graph, regionMap, model.ymax + 1, heightMap);
-			}	
-			
-			toolpathSet.push_back(toolpath);
-
-			/* Filling machined volume so that it would be outta consideration in next orientation */
-			machinedVolumeInOrientation = model.fillMachinableVolume(currentOrientation, heightMap);
-			
-			if(machinedVolumeInOrientation){
-				if(printVolume){
-					ofstream myfile;
-			 		myfile.open ("./" + folderName + "/" + currentOrientation + ".interim.raw", ios::binary );
-			 		model.print(myfile);
-				}
-				trueSequence.push_back(currentOrientation);
-			}
-
-			machinedVolume += machinedVolumeInOrientation;
-			
-		}		
-	}
-	if(machinedVolume != ((xmax+1)*(ymax+1)*(zmax+1) - model.volume)){
-		cout<<"xmax:"<<xmax<<"\n";
-		cout<<"ymax:"<<ymax<<"\n";
-		cout<<"zmax:"<<zmax<<"\n";
-		cout<<"model volume:"<<model.volume<<"\n";
-		cout<<"model total volume:"<<(xmax+1)*(ymax+1)*(zmax+1)<<"\n";
-		cout<<"Volume to be machined:"<<(xmax+1)*(ymax+1)*(zmax+1) - model.volume<<"\n";
-		cout<<"Machined Volume: "<< machinedVolume<<"\n";
-		cout<<"Sorry , the object cannot be machined\n";
-	}
+	Graph graph = toGraph(heightMap, toolConfig, regionMap);
 	
-	return make_pair(trueSequence, toolpathSet);
+	cout<<"graph:"<<graph.size()<<"\n";
+	
+	string toolpath;
+	
+	if(orientation == "xy+" || orientation == "xy-"){
+		toolConfig.safeHeight = model.zmax +2;
+		
+		/* Convert Height Graph to Depth Graph */
+		toDepthGraph(graph, model.zmax+1);
+		
+		return toToolpath(model, toolConfig, orientation, graph, regionMap, model.zmax + 1, heightMap);
+	}
+	else if(orientation == "yz+" || orientation == "yz-"){
+		toolConfig.safeHeight = model.xmax +2;
+		
+		/* Convert Height Graph to Depth Graph */
+		toDepthGraph(graph, model.xmax+1);
+		
+		return toToolpath(model, toolConfig, orientation, graph, regionMap, model.xmax + 1, heightMap);	
+	}
+	else if(orientation == "xz+" || orientation == "xz-"){
+		toolConfig.safeHeight = model.ymax +2;
+		
+		/* Convert Height Graph to Depth Graph */
+		toDepthGraph(graph, model.ymax+1);
+		
+		return toToolpath(model, toolConfig, orientation, graph, regionMap, model.ymax + 1, heightMap);
+	}	
 }
 
 

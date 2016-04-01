@@ -32,32 +32,31 @@ int main(int argc, char **argv){
 	char boolVal; 
 	bool printVolume = true;
 	int objectsVolume=0;
+	list<string> toolpaths;
 
 	/* Initialise Volumetric Model */
 	VolumetricModel model(voxels, lMax, bMax, hMax);
 	
 	/* Generate Tentative Sequence of Orientations */
-	list<string> tentativeSequence = generateTentativeSequence(model);
-	
-	list<string>::iterator it;
+	list<pair<Orientation, HeightMap> > sequence = generateSequence(model, folderName);
 	
 	/* Operation Planning for each Orientation */
-	pair<list<Orientation>, list<string> > skk = planOperation(model, toolConfig, tentativeSequence, folderName, printVolume);
-	list<string> sk = skk.second;
-	list<Orientation> sequence = skk.first;
+	for(list<pair<Orientation, HeightMap>>::iterator it = sequence.begin(); it != sequence.end(); it++){
+		
+		string toolpath = planOperation(model, toolConfig, (*it).first, (*it).second);
+		toolpaths.push_back(toolpath);
+	}
 	
-	list<Orientation>::iterator itt;
-	itt = sequence.begin();
-
 	//writing sequence to the test file 
 	writeSequenceToFile(folderName, sequence);
 
 	//saving toolpath in folder "OrientationOutput"
- 	for(it = sk.begin(); it != sk.end(); it++){
+	list<pair<Orientation, HeightMap> >::iterator seqIter = sequence.begin();
+ 	for(list<string>::iterator toolpathIter = toolpaths.begin(); toolpathIter != toolpaths.end(); toolpathIter++){
  		ofstream myfile;
- 		myfile.open ("./" + folderName + "/" + *itt + ".gcode" );
- 		myfile<<*it;
- 		itt++;
+ 		myfile.open ("./" + folderName + "/" + (*seqIter).first + ".gcode" );
+ 		myfile<<*toolpathIter;
+ 		seqIter++;
  		myfile.close();
 	}
 
