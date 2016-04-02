@@ -259,7 +259,7 @@ Point get_seed_point(Point seed_point, vector<vector<int> > &regionMap, vector<v
 		seed_point = Point(0,0);
 		QMap[seed_point.x][seed_point.y] = 1;		
 	}
-	seed_point.display(); cout<<"<<<\n";
+	
 	Q.push(seed_point);
 
 	while(!Q.empty()){
@@ -540,12 +540,7 @@ vector<vector<int> > get_modified_regionMap(VolumetricModel &model, string orien
 
 	}
 
-	for(int i=0; i<modifiedRegionMap.size(); i++){
-		cout<<"\n";
-		for(int j=0; j<modifiedRegionMap[0].size(); j++){
-				cout<<modifiedRegionMap[i][j]<<" ";
-		}
-	}
+	
 	//cout<<"\n\n\n";
 	
 	return modifiedRegionMap;

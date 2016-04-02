@@ -1,7 +1,6 @@
 //oggpnosn 
 //hkhr 
 
-//heightmap to toolpath generator
 #include <iostream>
 #include <iomanip>
 #include <list>
@@ -13,7 +12,7 @@
 
 using namespace std;
 
-
+/* Maximum height in the height map */
 int calculateMaxZ(HeightMap heightMap){
 		int globalMaximum=0, localMaximum=0;		
 		for(int i=0; i<heightMap.second.first; i++){
@@ -25,43 +24,51 @@ int calculateMaxZ(HeightMap heightMap){
 		return globalMaximum;
 }
 
-list<Point_2D> findNeighbour(int a, int b, int N, int M){
+/* Find the valid neighboour points on height map for a point */
+list<Point_2D> findNeighbour(Point_2D point, int N, int M){
 	list<Point_2D> neighbour;
 
-	if(a+1<N){
-		neighbour.push_back(make_pair(a+1, b));
+	if(point.first+1<N){
+		neighbour.push_back(make_pair(point.first, point.second));
 	}
-	if(a-1>=0){
-		neighbour.push_back(make_pair(a-1, b));	
+	if(point.first-1>=0){
+		neighbour.push_back(make_pair(point.first-1, point.second));	
 	}
-	if(b-1>=0){
-		neighbour.push_back(make_pair(a, b-1));	
+	if(point.second-1>=0){
+		neighbour.push_back(make_pair(point.first, point.second-1));	
 	}
-	if(b+1 < M){
-		neighbour.push_back(make_pair(a, b+1));	
+	if(point.second+1 < M){
+		neighbour.push_back(make_pair(point.first, point.second+1));	
 	}
 	return neighbour;
 }
 
-void insertEdge(Graph &graph, int r1, int r2, int h1, int h2){
+/* Inserts edge in region graph */
+void insertEdge(Graph &graph, int region1, int region2, int height1, int height2){
 	try{
-		AdjList iter = graph.at(r1).second;
-		AdjList::iterator it = find(iter.begin(), iter.end(), r2);
+		/* Get the relevent adjacency list */
+		AdjList iter = graph.at(region1).second;
+		
+		/* Find region2 in the adjacency list */
+		AdjList::iterator it = find(iter.begin(), iter.end(), region2);
+		
+		/* if found */
 		if(it == iter.end()){
-			//add r1, r2
-			graph[r1].second.push_back(r2);
-			insertEdge(graph, r2, r1, h2, h1);
+			/* add r1, r2 */
+			graph[region1].second.push_back(region2);
+			insertEdge(graph, region2, region1, height2, height1);
 		}
 	}
 	catch(out_of_range){
 		AdjList *adj = new AdjList();
-		adj->push_back(r2);
-		graph[r1] = make_pair(h1, *adj);
-		insertEdge(graph, r2, r1, h2, h1);
+		adj->push_back(region2);
+		graph[region1] = make_pair(height1, *adj);
+		insertEdge(graph, region2, region1, height2, height1);
 	}
 
 }
 
+/* Produces graph from region map */
 Graph toGraph(HeightMap heightMap, ToolConfig toolConfig, RegionMap &regionMap){
 	
 	/* Initiating regionMap */
@@ -108,7 +115,7 @@ Graph toGraph(HeightMap heightMap, ToolConfig toolConfig, RegionMap &regionMap){
 					regionMap.first[currentPoint.first][currentPoint.second] = regionNumber;
 
 					/* Find neighbours of curret point */
-					list<Point_2D> neighbour = findNeighbour(currentPoint.first, currentPoint.second, regionMap.second.first, regionMap.second.second);
+					list<Point_2D> neighbour = findNeighbour(currentPoint, regionMap.second.first, regionMap.second.second);
 					
 					
 					for(list<Point_2D>::iterator it = neighbour.begin(); it != neighbour.end(); it++){
@@ -140,7 +147,7 @@ Graph toGraph(HeightMap heightMap, ToolConfig toolConfig, RegionMap &regionMap){
 	return graph;
 }
 
-//it converts heightmap to depthmap by subtracting maximum height with all the heights 
+/* Converts Height Graph to Depth Graph */
 void toDepthGraph(Graph &graph, int maxHeight){
 	
 	/* This loop basically converts height to depth */
@@ -150,7 +157,7 @@ void toDepthGraph(Graph &graph, int maxHeight){
 
 }
 
-//picks the minimum depth node 
+/* picks the minimum depth node */
 int pickMin(Graph &graph){
 	
 	Graph::iterator graphIter = graph.begin();
@@ -170,7 +177,7 @@ int pickMin(Graph &graph){
 	return minNode;
 }
 
-//finds all the nodes connected to "u" 
+/* Returns all the nodes connected to minNode */
 AdjList connected(Graph &graph, int minNode){
 	
 	IntStack stack;
@@ -198,6 +205,7 @@ AdjList connected(Graph &graph, int minNode){
 	}
 	return vertexList;
 }
+
 /* Removed to add kokopalli system. To be erased completely in future */
 /*
 //writes gcode by taking path position 
@@ -356,7 +364,7 @@ string machine(VolumetricModel &model, string orientation, AdjList vlist, Matrix
 }
 */
 
-#include "contour_tracing.h"
+/* Debug function to display contents of graph */
 void displayGraph(Graph &graph){
 	Graph::iterator it;
 	for(it = graph.begin(); it != graph.end(); it++){
@@ -369,7 +377,7 @@ void displayGraph(Graph &graph){
 	}
 }
 
-//it updates the graph depth info after machining 
+/* Update graph after operation */ 
 void processGraph(Graph &graph , AdjList &vertexList, int depth){
 
 	AdjList zeroDepthList;
@@ -393,7 +401,7 @@ void processGraph(Graph &graph , AdjList &vertexList, int depth){
 	}
 }
 
-//converts graph to toolpath using connected component and zigzag path generation strategy
+/* Operation Sequencing */
 string toToolpath(VolumetricModel &model, ToolConfig toolConfig, Orientation orientation, Graph &graph, RegionMap &regionMap, int maxHeight, HeightMap heightMap){
 	
 	string toolpath = "G21\nG90\nF" + to_string(toolConfig.feedRate) + "\n" ;
@@ -418,7 +426,14 @@ string toToolpath(VolumetricModel &model, ToolConfig toolConfig, Orientation ori
 		AdjList vertexList = connected(graph, minNode);
 		
 		/* Machine all the nodes to the respective height */
-		toolpath += generate_toolpath_with_compatibility(model, orientation, vertexList, regionMap.first, graph[minNode].first, numberOfRegions, regionCurrentHeights[minNode], toolConfig.safeHeight,  maxHeight, heightMap.first, toolConfig.toolDiameter, toolConfig.stepSize);
+		//toolpath += generate_toolpath_with_compatibility(model, orientation, vertexList, regionMap.first, graph[minNode].first, numberOfRegions, regionCurrentHeights[minNode], toolConfig.safeHeight,  maxHeight, heightMap.first, toolConfig.toolDiameter, toolConfig.stepSize);
+		
+		/* Display Operation */
+		cerr<<"\nOperation: {<";
+		for(AdjList::iterator it = vertexList.begin(); it != vertexList.end(); it++){
+			cerr<<(*it)<<" ";
+		}
+		cerr<<">, "<<regionCurrentHeights[minNode]<<", "<<graph[minNode].first<<"}";
 		
 		/* Reduce regionCurrentHeight of all connected vertices by the depth of minNode */
 		for(AdjList::iterator it = vertexList.begin(); it!= vertexList.end(); it++){
@@ -432,7 +447,7 @@ string toToolpath(VolumetricModel &model, ToolConfig toolConfig, Orientation ori
 }
 
 
-//generate toolpath for sequence 
+/* Operation Planning */ 
 string planOperation(VolumetricModel &model, ToolConfig toolConfig, Orientation orientation, HeightMap &heightMap){
 	
 	int xmax = model.xmax, ymax = model.ymax, zmax = model.zmax;
@@ -440,17 +455,6 @@ string planOperation(VolumetricModel &model, ToolConfig toolConfig, Orientation 
 	RegionMap regionMap;
 	
 	Graph graph = toGraph(heightMap, toolConfig, regionMap);
-	
-	/* Show regionMap */
-	/*
-	for(int i=0; i<regionMap.second.first; i++){
-		cout<<"\n";
-		for(int j=0; j<regionMap.second.second; j++){
-			cout<<std::setw(2)<<regionMap.first[i][j]<<" ";
-		}
-	}
-	*/ 
-	
 	
 	string toolpath;
 	

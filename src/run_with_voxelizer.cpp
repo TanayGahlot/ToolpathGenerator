@@ -9,12 +9,13 @@
 #include <algorithm>
 #include <fstream>
 
-#include "lib/cvmlcpp/base/Matrix"
+#include "model/utility.h"
 #include "model/structures.h"
 #include "model/ToolConfig.h"
 #include "model/VolumetricModel.h"
 #include "voxelizer.h"
 #include "sequenceGenerator.h"
+#include "contour_tracing.h"
 #include "toolpathGenerator.h"
 
 
@@ -49,14 +50,13 @@ int main(int argc, char **argv){
 		toolpaths.push_back(toolpath);
 	}
 	
-	//writing sequence to the test file 
+	/* Writing Sequence to the File */
 	writeSequenceToFile(folderName, sequence);
 
-	//saving toolpath in folder "OrientationOutput"
+	/* Save toolpath to the repective files */
 	list<pair<Orientation, HeightMap> >::iterator seqIter = sequence.begin();
  	for(list<string>::iterator toolpathIter = toolpaths.begin(); toolpathIter != toolpaths.end(); toolpathIter++){
  		ofstream myfile;
- 		cout<<(*seqIter).first<<" ";
  		myfile.open ("./" + folderName + "/" + (*seqIter).first + ".gcode" );
  		myfile<<*toolpathIter;
  		seqIter++;

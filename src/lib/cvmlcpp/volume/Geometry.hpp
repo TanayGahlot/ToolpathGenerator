@@ -220,10 +220,9 @@ bool Geometry<T>::loadGeometry(const PointIterator begin, const PointIterator en
 	assert(uniq_pts.begin() != uniq_pts.end());
 	ptRange[e].push_back(std::make_pair(uniq_pts.begin(), uniq_pts.end()));
 	std::vector<std::size_t> pt_keys(uniq_pts.size());
-	std::cout<<"\nReading facets...";
 	while (!ptRange[e].empty())
 	{
-		int facetCountForDebug =0;
+		
 		assert(ptRange[o].empty());
 		for (typename std::vector< std::pair<Pt_It, Pt_It> >::const_iterator
 		     it = ptRange[e].begin(); it != ptRange[e].end(); ++it)
@@ -231,7 +230,7 @@ bool Geometry<T>::loadGeometry(const PointIterator begin, const PointIterator en
 			const PointIterator begin1 = it->first;
 			const PointIterator end2   = it->second;
 			assert(begin1 < end2);
-			std::cout<<"\rReading Facets..."<<int(float(facetCountForDebug++)/ptRange[e].size()*100)<<"%...";
+			
 			const std::size_t dist = std::distance(begin1, end2);
 
 			const PointIterator middle = begin1 + dist / 2u;
@@ -269,7 +268,7 @@ bool Geometry<T>::loadGeometry(const PointIterator begin, const PointIterator en
 	assert(_pointKeyMap.size() == uniq_pts.size());
 #ifndef NDEBUG
 	// make sure all unique points are accounted for
-	std::cout<<"\n";
+	
 	int uniqueCount = 0;
 	for (auto pit = uniq_pts.begin(); pit != uniq_pts.end(); ++pit)
 	{
@@ -285,7 +284,7 @@ bool Geometry<T>::loadGeometry(const PointIterator begin, const PointIterator en
 				break;
 			}
 		}
-		std::cout<<"\rConsidering all unique points..."<<(float(uniqueCount++)/uniq_pts.size())<<"%";
+		
 		
 		assert(found); // Oopsie ?
 	}
@@ -303,7 +302,7 @@ bool Geometry<T>::loadGeometry(const PointIterator begin, const PointIterator en
 #ifdef _OPENMP
 	#pragma omp parallel for
 #endif
-	std::cout<<"\nGathering Facets 0%...";
+	
 	for (int f = 0; f < int(NFacets); ++f) // For each facet ...
 	{
 		for (std::size_t p = 0; p < 3; ++p) // ... there are 3 pts in input
@@ -320,7 +319,7 @@ bool Geometry<T>::loadGeometry(const PointIterator begin, const PointIterator en
 				++pti;
 				assert(pti != uniq_pts.end());
 			}
-			std::cout<<"\rGathering Facets "<<int(float(f)/int(NFacets)*100)<<"%...";
+			
 			assert(roughly_equal(*pti, pt));
 
 			// Index in uniq_pts corresponds to index in pt_keys
@@ -352,7 +351,7 @@ bool Geometry<T>::loadGeometry(const PointIterator begin, const PointIterator en
 	o = 1 - e;
 	fRange[e].push_back( std::make_pair(facets.begin(), facets.end()) );
 
-	std::cout<<"\nBuilding Facet Tree...";
+	
 	int TreeCount = 0;
 
 	while (!fRange[e].empty())
