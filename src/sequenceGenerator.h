@@ -32,7 +32,7 @@ void generateFilledModels(VolumetricModel &model, Orientation currentOrientation
 	model.print(myfile);
 }
 
-list<pair<Orientation, HeightMap>> generateSequence(VolumetricModel &model, string folderName){
+list<pair<Orientation, HeightMap>> generateSequence(VolumetricModel model, string folderName){
 	
 	vector<pair<Orientation, int>> orientationList(NO_OF_ORIENTATIONS);
 	int machinedVolume = 0;
@@ -52,10 +52,7 @@ list<pair<Orientation, HeightMap>> generateSequence(VolumetricModel &model, stri
 		if(model.calculateMachinableVolume(orientationList[i].first) != 0){
 			
 			HeightMap heightMap = model.toHeightmap(orientationList[i].first);
-			
-			
-		
-			
+					
 			int machinedVolumeInOrientation = model.fillMachinableVolume(orientationList[i].first, heightMap);
 			
 			if(machinedVolumeInOrientation){
@@ -69,6 +66,7 @@ list<pair<Orientation, HeightMap>> generateSequence(VolumetricModel &model, stri
 			
 			machinedVolume += machinedVolumeInOrientation;
 		}
+		
 	}
 	
 	if(machinedVolume != ((model.xmax+1)*(model.ymax+1)*(model.zmax+1) - model.volume)){

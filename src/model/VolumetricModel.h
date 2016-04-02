@@ -9,15 +9,100 @@ class VolumetricModel{
 		int xmax, ymax, zmax;
 		int xmin, ymin, zmin;
 		int volume;
+		//cvmlcpp::Matrix voxels;
 		vector<vector<vector<int> > > model;
 		
-		VolumetricModel(vector<vector<vector<int> > > voxels, int lMax, int bMax, int hMax);
+		VolumetricModel(vector<vector<vector<int>>> voxels, int lMax, int bMax, int hMax);
 		int getVolume();
 		ll calculateMachinableVolume(string orientation);
 		int fillMachinableVolume(Orientation orientation, HeightMap heightmap);
 		HeightMap toHeightmap(string orientation);
 		void print(ofstream &fileStream);
+		bool callItMagic(Orientation orientation, int x, int y, int delta);
 };
+
+bool VolumetricModel::callItMagic(Orientation orientation, int x, int y, int depth){
+	if(orientation ==  "xy+"){
+		if(model[x][y][zmax-depth] == 2)
+			return false;
+		else
+			return true;
+	}
+	else if(orientation == "xy-"){
+		if(model[x][y][depth] == 2)
+			return false;
+		else
+			return true;
+	}
+	else if(orientation == "xz+"){
+		if(model[x][ymax-depth][y] == 2)
+			return false;
+		else
+			return true;
+	}
+	else if(orientation == "xz-"){
+		if(model[x][depth][y] == 2)
+			return false;
+		else
+			return true;
+	}
+	else if(orientation == "yz+"){
+
+		if(model[xmax-depth][x][y] == 2)
+			return false;
+		else
+			return true;
+	}
+	else if(orientation == "yz-"){
+		if(model[depth][x][y] == 2)
+			return false;
+		else
+			return true;
+	}
+}
+
+/*
+bool VolumetricModel::callItMagic(int i, int j, int dep, string orientation, int safeHeight, int delta){
+	//cout<<i<<", "<<j<<","<<dep<<"\n";
+	if(orientation ==  "xy+"){
+		if(model[i][j][safeHeight-delta-dep-1] == 2)
+			return false;
+		else
+			return true;
+	}
+	else if(orientation == "xy-"){
+		if(model[i][j][dep] == 2)
+			return false;
+		else
+			return true;
+	}
+	else if(orientation == "xz+"){
+		if(model[i][safeHeight-delta-dep-1][j] == 2)
+			return false;
+		else
+			return true;
+	}
+	else if(orientation == "xz-"){
+		if(model[i][dep][j] == 2)
+			return false;
+		else
+			return true;
+	}
+	else if(orientation == "yz+"){
+
+		if(model[safeHeight-delta-dep-1][i][j] == 2)
+			return false;
+		else
+			return true;
+	}
+	else if(orientation == "yz-"){
+		if(model[dep][i][j] == 2)
+			return false;
+		else
+			return true;
+	}
+}
+*/
 
 void VolumetricModel::print(ofstream &fileStream){
 	/*input: None
@@ -184,6 +269,7 @@ int VolumetricModel::fillMachinableVolume(Orientation orientation, HeightMap hei
 						machinedVolume +=1;
 					}
 					model[x][y][z] = 2;
+					
 				}
 				// machinedVolume += (heightmap[x][y]-1);
 			}
@@ -197,6 +283,7 @@ int VolumetricModel::fillMachinableVolume(Orientation orientation, HeightMap hei
 						machinedVolume +=1;
 					}
 					model[x][y][z] = 2;
+					
 				}	
 				// machinedVolume += (xmax-heightmap[y][z]-1);	
 			}
@@ -212,6 +299,7 @@ int VolumetricModel::fillMachinableVolume(Orientation orientation, HeightMap hei
 					}
 					
 					model[x][y][z] = 2;
+					
 				}		
 				//cout<<"\n";
 				// machinedVolume += (heightmap[y][z]-1);
@@ -227,6 +315,7 @@ int VolumetricModel::fillMachinableVolume(Orientation orientation, HeightMap hei
 						machinedVolume +=1;
 					}
 					model[x][y][z] = 2;
+					
 				}
 				// machinedVolume += (ymax-heightmap[x][z]-1);
 			}
@@ -240,6 +329,7 @@ int VolumetricModel::fillMachinableVolume(Orientation orientation, HeightMap hei
 						machinedVolume +=1;
 					}
 					model[x][y][z] = 2;
+					
 				}
 				// machinedVolume += (heightmap[x][z]-1);		
 			}

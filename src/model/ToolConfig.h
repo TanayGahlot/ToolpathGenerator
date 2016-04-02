@@ -7,7 +7,7 @@ class ToolConfig{
 		float overlap;
 		float feedRate;
 		float safeHeight;
-		ToolConfig(float tD = 1, float sS = 1, float oL = 2.5, float fR = 500, float tL = 8, float sD = 200, float sH = 0){
+		ToolConfig(float tD = 1, float sS = 1, float oL = 1, float fR = 500, float tL = 10, float sD = 200, float sH = 0){
 			toolDiameter = tD;
 			toolLength = tL;
 			spindleDiameter = sD;

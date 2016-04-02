@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <fstream>
 
+#include "lib/cvmlcpp/base/Matrix"
 #include "model/structures.h"
 #include "model/ToolConfig.h"
 #include "model/VolumetricModel.h"
@@ -22,7 +23,8 @@ int main(int argc, char **argv){
 	string folderName = static_cast<string>(argv[2]);
 	
 	/* Arguement 1 has stl file address which is converted to voxels. */
-	vector<vector<vector<int> > > voxels = convert_to_voxels(argv[1]);
+	vector<vector<vector<int>>> voxels = convert_to_voxels(argv[1]);
+	
 	int lMax = voxels.size();
 	int bMax = voxels[0].size();
 	int hMax = voxels[0][0].size();
@@ -54,6 +56,7 @@ int main(int argc, char **argv){
 	list<pair<Orientation, HeightMap> >::iterator seqIter = sequence.begin();
  	for(list<string>::iterator toolpathIter = toolpaths.begin(); toolpathIter != toolpaths.end(); toolpathIter++){
  		ofstream myfile;
+ 		cout<<(*seqIter).first<<" ";
  		myfile.open ("./" + folderName + "/" + (*seqIter).first + ".gcode" );
  		myfile<<*toolpathIter;
  		seqIter++;

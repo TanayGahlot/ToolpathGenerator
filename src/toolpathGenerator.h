@@ -3,6 +3,7 @@
 
 //heightmap to toolpath generator
 #include <iostream>
+#include <iomanip>
 #include <list>
 #include <vector>
 #include <map>
@@ -197,7 +198,8 @@ AdjList connected(Graph &graph, int minNode){
 	}
 	return vertexList;
 }
-
+/* Removed to add kokopalli system. To be erased completely in future */
+/*
 //writes gcode by taking path position 
 void writeGcode(bool &cutting, BoolDict &isInList, Matrix &regionmap, string &toolpath, int safeHeight, int regionCurrentHeight, int i , int j, int dep, int iprev, int jprev, int delta){
 	if(cutting){
@@ -228,47 +230,8 @@ void endCut(bool &cutting, BoolDict &isInList, Matrix &regionmap, string &toolpa
 	toolpath += ("G0 ");
 }
 
-//call it magic...
-bool callItMagic(VolumetricModel &model, int i, int j, int dep, string orientation, int safeHeight, int delta){
-	//cout<<i<<", "<<j<<","<<dep<<"\n";
-	if(orientation ==  "xy+"){
-		if(model.model[i][j][safeHeight-delta-dep-1] == 2)
-			return false;
-		else
-			return true;
-	}
-	else if(orientation == "xy-"){
-		if(model.model[i][j][dep] == 2)
-			return false;
-		else
-			return true;
-	}
-	else if(orientation == "xz+"){
-		if(model.model[i][safeHeight-delta-dep-1][j] == 2)
-			return false;
-		else
-			return true;
-	}
-	else if(orientation == "xz-"){
-		if(model.model[i][dep][j] == 2)
-			return false;
-		else
-			return true;
-	}
-	else if(orientation == "yz+"){
 
-		if(model.model[safeHeight-delta-dep-1][i][j] == 2)
-			return false;
-		else
-			return true;
-	}
-	else if(orientation == "yz-"){
-		if(model.model[dep][i][j] == 2)
-			return false;
-		else
-			return true;
-	}
-}
+#include "contour_tracing.h"
 
 //machines connected regions 
 string machine(VolumetricModel &model, string orientation, AdjList vlist, Matrix regionmap, int depth, int noOfRegion, int regionCurrentHeight, int safeHeight, int maxHeight, int TOOL_DIA, int depthPerPass){
@@ -286,8 +249,11 @@ string machine(VolumetricModel &model, string orientation, AdjList vlist, Matrix
 		else
 			isInList[i] = false;
 	}
-
 	
+	
+	
+
+	cout<<"i am here";
 	for(dep = 0; dep<depth; dep+=depthPerPass){
 		//toolpath += "G1 Z" + to_string(safeHeight-dep) + "\n";
 		
@@ -296,6 +262,7 @@ string machine(VolumetricModel &model, string orientation, AdjList vlist, Matrix
 				cutting = false;
 				if((i/TOOL_DIA)%2 == 0){
 					for(j=0; j<n; j++){
+						cout<<cutting;
 						if(callItMagic(model, i, j, dep, orientation, safeHeight, delta)){
 							writeGcode(cutting, isInList, regionmap, toolpath, safeHeight, regionCurrentHeight, i ,  j, dep, iprev, jprev, delta);
 							iprev = i;jprev =j;
@@ -307,11 +274,13 @@ string machine(VolumetricModel &model, string orientation, AdjList vlist, Matrix
 								toolpath += ("G0 ");
 								cutting = false; 
 							}
-						}	
+						}
+						
 					}	
 				}
 				else{
 					for(j=n-1; j>=0; j--){
+						cout<<cutting;
 						if(callItMagic(model, i, j, dep, orientation, safeHeight, delta)){
 							writeGcode(cutting, isInList, regionmap, toolpath, safeHeight, regionCurrentHeight, i ,  j, dep, iprev, jprev, delta);
 							iprev = i;jprev =j;
@@ -330,7 +299,9 @@ string machine(VolumetricModel &model, string orientation, AdjList vlist, Matrix
 				}
 				if(cutting)
 					endCut(cutting, isInList, regionmap, toolpath, safeHeight, regionCurrentHeight, i ,  j, dep, iprev, jprev);
+					
 			}
+			
 		}
 		else{
 			for(i=m-1; i>=0; i-= TOOL_DIA){
@@ -380,9 +351,12 @@ string machine(VolumetricModel &model, string orientation, AdjList vlist, Matrix
 	if(toolpath.substr(length-3, 3) == "G0 ")
 		toolpath = toolpath.substr(0, length-3);
 	toolpath += "G1 Z2\n"; 
+	
 	return toolpath;
 }
+*/
 
+#include "contour_tracing.h"
 void displayGraph(Graph &graph){
 	Graph::iterator it;
 	for(it = graph.begin(); it != graph.end(); it++){
@@ -444,14 +418,15 @@ string toToolpath(VolumetricModel &model, ToolConfig toolConfig, Orientation ori
 		AdjList vertexList = connected(graph, minNode);
 		
 		/* Machine all the nodes to the respective height */
-		toolpath += machine(model, orientation, vertexList, regionMap.first, graph[minNode].first, numberOfRegions, regionCurrentHeights[minNode], toolConfig.safeHeight,  maxHeight, toolConfig.toolDiameter, toolConfig.stepSize);
-
+		toolpath += generate_toolpath_with_compatibility(model, orientation, vertexList, regionMap.first, graph[minNode].first, numberOfRegions, regionCurrentHeights[minNode], toolConfig.safeHeight,  maxHeight, heightMap.first, toolConfig.toolDiameter, toolConfig.stepSize);
+		
 		/* Reduce regionCurrentHeight of all connected vertices by the depth of minNode */
 		for(AdjList::iterator it = vertexList.begin(); it!= vertexList.end(); it++){
 			regionCurrentHeights[*it] -= graph[minNode].first;
 		}
 
 		processGraph(graph, vertexList, graph[minNode].first);
+		
 	}	
 	return toolpath;
 }
@@ -466,7 +441,16 @@ string planOperation(VolumetricModel &model, ToolConfig toolConfig, Orientation 
 	
 	Graph graph = toGraph(heightMap, toolConfig, regionMap);
 	
-	cout<<"graph:"<<graph.size()<<"\n";
+	/* Show regionMap */
+	/*
+	for(int i=0; i<regionMap.second.first; i++){
+		cout<<"\n";
+		for(int j=0; j<regionMap.second.second; j++){
+			cout<<std::setw(2)<<regionMap.first[i][j]<<" ";
+		}
+	}
+	*/ 
+	
 	
 	string toolpath;
 	
@@ -476,7 +460,7 @@ string planOperation(VolumetricModel &model, ToolConfig toolConfig, Orientation 
 		/* Convert Height Graph to Depth Graph */
 		toDepthGraph(graph, model.zmax+1);
 		
-		return toToolpath(model, toolConfig, orientation, graph, regionMap, model.zmax + 1, heightMap);
+		toolpath = toToolpath(model, toolConfig, orientation, graph, regionMap, model.zmax + 1, heightMap);
 	}
 	else if(orientation == "yz+" || orientation == "yz-"){
 		toolConfig.safeHeight = model.xmax +2;
@@ -484,7 +468,7 @@ string planOperation(VolumetricModel &model, ToolConfig toolConfig, Orientation 
 		/* Convert Height Graph to Depth Graph */
 		toDepthGraph(graph, model.xmax+1);
 		
-		return toToolpath(model, toolConfig, orientation, graph, regionMap, model.xmax + 1, heightMap);	
+		toolpath = toToolpath(model, toolConfig, orientation, graph, regionMap, model.xmax + 1, heightMap);	
 	}
 	else if(orientation == "xz+" || orientation == "xz-"){
 		toolConfig.safeHeight = model.ymax +2;
@@ -492,8 +476,12 @@ string planOperation(VolumetricModel &model, ToolConfig toolConfig, Orientation 
 		/* Convert Height Graph to Depth Graph */
 		toDepthGraph(graph, model.ymax+1);
 		
-		return toToolpath(model, toolConfig, orientation, graph, regionMap, model.ymax + 1, heightMap);
-	}	
+		toolpath = toToolpath(model, toolConfig, orientation, graph, regionMap, model.ymax + 1, heightMap);
+	}
+	
+	model.fillMachinableVolume(orientation, heightMap);
+	
+	return toolpath;
 }
 
 

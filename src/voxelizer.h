@@ -34,9 +34,10 @@ cvmlcpp::Matrix<int, 3u> getVoxelizedMatrixFromFile(char *stlFile){
 }
 
 // This function is used with integrated voxelizer
-std::vector<vector<vector<int>>> convert_to_voxels(char *stlFile){
+vector<vector<vector<int>>> convert_to_voxels(char *stlFile){
 	
 	cvmlcpp::Matrix<int, 3u> voxels = getVoxelizedMatrixFromFile(stlFile);
+	//return voxels;
 	
 	tr1::array<std::size_t, 3>::const_iterator i = voxels.extents();
 	int xMax = (*i);
@@ -70,4 +71,5 @@ std::vector<vector<vector<int>>> convert_to_voxels(char *stlFile){
 	}	
 	
 	return vox;
+	
 }
