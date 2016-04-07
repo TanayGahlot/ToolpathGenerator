@@ -29,7 +29,7 @@ list<Point_2D> findNeighbour(Point_2D point, int N, int M){
 	list<Point_2D> neighbour;
 
 	if(point.first+1<N){
-		neighbour.push_back(make_pair(point.first, point.second));
+		neighbour.push_back(make_pair(point.first+1, point.second));
 	}
 	if(point.first-1>=0){
 		neighbour.push_back(make_pair(point.first-1, point.second));	
@@ -426,7 +426,7 @@ string toToolpath(VolumetricModel &model, ToolConfig toolConfig, Orientation ori
 		AdjList vertexList = connected(graph, minNode);
 		
 		/* Machine all the nodes to the respective height */
-		//toolpath += generate_toolpath_with_compatibility(model, orientation, vertexList, regionMap.first, graph[minNode].first, numberOfRegions, regionCurrentHeights[minNode], toolConfig.safeHeight,  maxHeight, heightMap.first, toolConfig.toolDiameter, toolConfig.stepSize);
+		toolpath += generate_toolpath_with_compatibility(model, orientation, vertexList, regionMap.first, graph[minNode].first, numberOfRegions, regionCurrentHeights[minNode], toolConfig.safeHeight,  maxHeight, heightMap.first, toolConfig.toolDiameter, toolConfig.stepSize);
 		
 		/* Display Operation */
 		cerr<<"\nOperation: {<";
