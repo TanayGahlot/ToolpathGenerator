@@ -1,3 +1,6 @@
+//oggpnosn 
+//hkhr
+
 #include <vector>
 
 #include "structures.h"
