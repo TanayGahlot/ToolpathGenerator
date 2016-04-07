@@ -1,3 +1,5 @@
+//oggpnosn 
+//hkhr 
 
 #define NO_OF_ORIENTATIONS 6
 
