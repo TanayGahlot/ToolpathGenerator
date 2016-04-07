@@ -426,7 +426,7 @@ string toToolpath(VolumetricModel &model, ToolConfig toolConfig, Orientation ori
 		AdjList vertexList = connected(graph, minNode);
 		
 		/* Machine all the nodes to the respective height */
-		toolpath += generate_toolpath_with_compatibility(model, orientation, vertexList, regionMap.first, graph[minNode].first, numberOfRegions, regionCurrentHeights[minNode], toolConfig.safeHeight,  maxHeight, heightMap.first, toolConfig.toolDiameter, toolConfig.stepSize);
+		// toolpath += generate_toolpath_with_compatibility(model, orientation, vertexList, regionMap.first, graph[minNode].first, numberOfRegions, regionCurrentHeights[minNode], toolConfig.safeHeight,  maxHeight, heightMap.first, toolConfig.toolDiameter, toolConfig.stepSize);
 		
 		/* Display Operation */
 		cerr<<"\nOperation: {<";

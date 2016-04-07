@@ -15,8 +15,9 @@
 /* Set as true to change resolution */
 #define TURN_ON_RESOLUTION 1
 
+//removing it so that voxelization resolution can be controlled 
 /* Resolution factor */
-#define RESOLUTION 0.1
+// #define RESOLUTION 0.1
 
 
 

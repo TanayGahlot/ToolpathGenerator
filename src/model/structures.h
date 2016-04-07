@@ -5,7 +5,7 @@
 #include <map>
 #include <list>
 #include <vector>
-
+#include <string>
 using namespace std;
 
 typedef long long int ll;
@@ -40,3 +40,5 @@ typedef map<int, int> IntMap;
 typedef map<int , bool> BoolDict;
 /* Integer stack */
 typedef stack<int> IntStack;
+
+typedef vector<vector<vector<int>>> Voxels;
