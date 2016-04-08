@@ -143,31 +143,35 @@ pair<ll, Matrix> getHeightmapAndMachinableVolume(cvmlcpp::Matrix<int, 3u> &model
 	return make_pair(machinableVolume, heightmap);
 }
 
-void print(Matrix heightmap){
+string print(Matrix heightmap){
 	int i, j, n= heightmap.size(), m = heightmap[0].size();
+	string heightmapString ="";
 	for(i=0; i<n; i++){
 		for(j=0; j<m; j++){
-			cout<<heightmap[i][j] <<" ";
+			heightmapString += to_string(heightmap[i][j]) + " ";
 		}
-		cout<<"\n";
+		// cout<<"\n";
 	}  
+	return heightmapString;
 }
 
-void print(cvmlcpp::Matrix<int, 3u> model){
+string print(cvmlcpp::Matrix<int, 3u> model){
 
 	tr1::array<std::size_t, 3>::const_iterator iter = model.extents();
+	string modelString = "";
 	int xmax = (*iter); iter++; int ymax = (*iter); iter++; int zmax = (*iter);
 	int xmin =0, ymin =0, zmin=0;
 	xmax-=1; ymax-=1; zmax-=1;
 	for(int z=zmin; z<=zmax; z++){
 		for(int x=xmin; x<=xmax; x++){
 			for(int y=ymin; y<=ymax; y++){
-					cout<<model[x][y][z]<<" ";
+					modelString += to_string(model[x][y][z]) + " ";
 			}
-			cout<<"\n";
+			// cout<<"\n";
 		}
-		cout<<"\n";
+		// cout<<"\n";
 	}
+	return modelString;
 }
 
 int main(int argc, char **argv){
@@ -177,6 +181,11 @@ int main(int argc, char **argv){
 	//why am i using cvmlcpp? coz its fast and we need to come up with a heightmap creator which could convert heightmap and estimate volume at once 
 	cvmlcpp::Matrix<int, 3u> model =  getVoxelizedMatrixFromFile(argv[1], &scale);
 
+	//letting the user know what the scale of model
+	string jsonOutput = "";
+
+	jsonOutput += "{\"scale\":" + to_string(scale) + ", \"heightmap\":[";
+
 	//getting heightmap for each orientation 
 	int i;
 	for(i=0; i<NO_OF_ORIENTATIONS; i++){
@@ -185,11 +194,23 @@ int main(int argc, char **argv){
 		Matrix heightmap = volumeAndHeightmap.second;
 
 		if(machinableVolume > 0){
-			cout<< SET_OF_ORIENTATIONS[i]<<":"<<machinableVolume<<"\n";
-			print(heightmap);
+			jsonOutput += "{\"orientation\": \"" + SET_OF_ORIENTATIONS[i] + "\",\"volume\": " + to_string(machinableVolume) + ", ";
+
+			int length = heightmap.size();
+			int width = heightmap[0].size();
+			jsonOutput +=  "\"length\":" + to_string(length) + ", \"width\":" + to_string(width) + ",";
+			jsonOutput += "\"raw\":\"";
+			jsonOutput += print(heightmap);
+			jsonOutput += "\"},";
 		}
 	}
-	//print(model);
-
+	jsonOutput.pop_back();
+	jsonOutput += "], \"model\":{";
+	int length = model.size(), width = model[0].size(), height = model[0][0].size();
+	jsonOutput += "\"length\":" + to_string(length) + ", \"width\":" + to_string(width) + "," + "\"height\":" + to_string(height) + ",\"raw\": \"" ;
+	jsonOutput += print(model);
+	jsonOutput += "\"}";
+	jsonOutput += "}";
+	cout<<jsonOutput;
 	return 0;
 }
