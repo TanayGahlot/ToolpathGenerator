@@ -42,3 +42,7 @@ typedef map<int , bool> BoolDict;
 typedef stack<int> IntStack;
 
 typedef vector<vector<vector<int>>> Voxels;
+
+typedef pair<AdjList , pair<int, int > > Operation;
+
+typedef list<Operation> OperationPlan;

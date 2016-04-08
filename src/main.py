@@ -6,6 +6,7 @@
 import subprocess
 from subprocess import CalledProcessError
 import sys
+from multiprocessing import Pool 
 
 SET_OF_ORIENTATIONS = ["xy+", "xy-", "xz+", "xz-", "yz+", "yz-"]
 
