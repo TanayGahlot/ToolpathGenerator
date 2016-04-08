@@ -180,6 +180,8 @@ int main(int argc, char **argv){
 	//voxelizing input stl file 
 	//why am i using cvmlcpp? coz its fast and we need to come up with a heightmap creator which could convert heightmap and estimate volume at once 
 	cvmlcpp::Matrix<int, 3u> model =  getVoxelizedMatrixFromFile(argv[1], &scale);
+	tr1::array<std::size_t, 3>::const_iterator iter = model.extents();
+	int length = (*iter); iter++; int width = (*iter); iter++; int height = (*iter);
 
 	//letting the user know what the scale of model
 	string jsonOutput = "";
@@ -206,7 +208,6 @@ int main(int argc, char **argv){
 	}
 	jsonOutput.pop_back();
 	jsonOutput += "], \"model\":{";
-	int length = model.size(), width = model[0].size(), height = model[0][0].size();
 	jsonOutput += "\"length\":" + to_string(length) + ", \"width\":" + to_string(width) + "," + "\"height\":" + to_string(height) + ",\"raw\": \"" ;
 	jsonOutput += print(model);
 	jsonOutput += "\"}";
