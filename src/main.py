@@ -14,7 +14,7 @@ import numpy as np
 from koko.fab.image import Image
 
 SET_OF_ORIENTATIONS = ["xy+", "xy-", "xz+", "xz-", "yz+", "yz-"]
-
+ORIENTATION_CODE = {"xy+":11, "xy-":12, "yz+":13, "yz-":14, "xz+":15, "xz-":16}
 
 def parseState(state):
 	args = []
@@ -27,7 +27,7 @@ def parseState(state):
 		elif heightmap["orientation"] == "yz+" or heightmap["orientation"] == "yz-":
 			arg += str(state["model"]["length"]) + "\n"
 		arg += heightmap["raw"]
-		args.append(arg)
+		args.append((arg, heightmap["orientation"]))
 	return args 
 
 def  generateGcodeFromPath(paths, feed, jog, plunge):
@@ -68,7 +68,7 @@ def  generateGcodeFromPath(paths, feed, jog, plunge):
 
 
 	for p in paths:
-
+		# gcode += "------------\n"
 		# Move to the start of this path at the jog height
 		gcode += "G00X%0.4fY%0.4fZ%0.4f\n" %(xyz(p.points[0][0], p.points[0][1], jog))
 
@@ -90,76 +90,110 @@ def  generateGcodeFromPath(paths, feed, jog, plunge):
 	gcode += "M30\n" # program end and reset
 	return gcode 
 
-def run_rough(img, values):
+def getRegionmap(plan):
+	length = plan["regionmap"]["length"]
+	width = plan["regionmap"]["width"]
+	raw = plan["regionmap"]["raw"].split(" ")
+	regionmap = [[int(raw[i*width +j]) for j in range(width)]for i in range(length)]
+	return regionmap
+
+def toBeMachined(orientation, x, y, z):
+	z=int(z) #to have integeral index
+	global model, modelLength, modelWidth, modelHeight 
+	if orientation == "xy+":
+		return model[x][y][z-1] == ORIENTATION_CODE[orientation]
+	elif orientation == "xy-":
+		return model[x][y][modelHeight - z +1] == ORIENTATION_CODE[orientation]
+	elif orientation == "yz+":
+		return model[z-1][x][y] == ORIENTATION_CODE[orientation]
+	elif orientation == "yz-":
+		return model[modelLength-z + 1][x][y] == ORIENTATION_CODE[orientation]
+	elif orientation == "xz+":
+		return model[x][z-1][y] == ORIENTATION_CODE[orientation]
+	elif orientation == "xz-":
+		return model[x][modelWidth-z +1][y] == ORIENTATION_CODE[orientation]
+
+def generateBitmap(operation, orientation, regionmap, z):
+	global scale
+	length = len(regionmap)
+	width = len(regionmap[0])
+	bitmap = [[False for x in range(width) ]for y in range(length)]
+	operationList = [int(region) for region in operation["regionlist"].split(" ") if region != ""]
+
+
+	for x in range(length):
+		for y in range(width):
+			bitmap[x][y] = [int(regionmap[x][y] in operationList)] #and toBeMachined(orientation, x, y, z)]
+			# print int(bitmap[x][y][0]),
+		# print "-"
+	# print "---------------------"
+	img = Image(length, width, scale, channels=1, depth=8)
+	img.array = np.array(bitmap, dtype=np.uint8)
+
+	return img 
+
+
+def run_rough(img, values, plan, orientation):
 	""" @brief Calculates a rough cut toolpath
 		@param img Input image
 		@returns Dictionary with 'paths' defined
 	"""
 	global state 
+
+	regionmap = getRegionmap(plan)
+	operations = plan["operationPlan"]
 	# Save image's original z values (which may have been None)
 	old_zvals = img.zmin, img.zmax
 
-	if img.zmin is not None and img.zmax is not None and img.dz:
-		values['top']	= img.zmax/state["scale"] #to account for scaling 
-		values['bottom'] = img.zmin
-	
+	paths = []
+	for operation in operations:	
+		# Figure out the set of z values at which to cut
+		values["top"] = operation["startHeight"]
+		values["bottom"] = operation["startHeight"] - operation["depth"] + 1
+		heights = [values['top']]
+		while heights[-1] > values['bottom']:
+			heights.append(heights[-1]-values['step'])
+		heights[-1] = values['bottom']
 
-	# We only need an overlap value if we're cutting more than one offsets
-	if values['offsets'] != 1:
-		v = values['overlap']
+		# Loop over z values, accumulating samples
 		
-	else:
-		values['overlap'] = 1
+		np.set_printoptions(threshold='nan')
+		
+		self_paths = []
+		last_image = None
+		last_paths = []
+		for z in heights:
+			
+			L = generateBitmap(operation, orientation, regionmap, z)
+			#print L.array; print "---"
+			L.array *= 100
 
-	# Figure out the set of z values at which to cut
-	heights = [values['top']]
-	while heights[-1] > values['bottom']:
-		heights.append(heights[-1]-values['step'])
-	heights[-1] = values['bottom']
+			if last_image is not None and L == last_image:
+				paths = [p.copy() for p in last_paths]
+			else:
+				distance = L.distance()
 
-	# Loop over z values, accumulating samples
-	i = 0
-	np.set_printoptions(threshold='nan')
-	
-	# fob =open("./transforms/img", "w")
-	# fob.write(img.array.__str__())
-	# fob.close()
-	
-	self_paths = []
-	last_image = None
-	last_paths = []
-	for z in heights:
-		i += 1
+				# fob =open("./transforms/tf_"+str(z), "w")
+				# fob.write(distance.array.__str__())
+				# fob.close()
 
-		L = img.threshold(z)
-		#print L.array; print "---"
-		L.array *= 100
+				paths = distance.contour(
+					values['diameter'], values['offsets'], values['overlap']
+				)
 
-		if last_image is not None and L == last_image:
-			paths = [p.copy() for p in last_paths]
-		else:
-			distance = L.distance()
+			for p in paths:	p.set_z(z-values['top'])
 
-			# fob =open("./transforms/tf_"+str(z), "w")
-			# fob.write(distance.array.__str__())
-			# fob.close()
+			last_paths = paths
+			last_image = L
+			self_paths += paths
 
-			paths = distance.contour(
-				values['diameter'], values['offsets'], values['overlap']
-			)
-
-		for p in paths:	p.set_z(z-values['top'])
-
-		last_paths = paths
-		last_image = L
-		self_paths += paths
-
+		paths += self_paths
 	
 
 	# Restore z values on image
 	img.zmin, img.zmax = old_zvals
 
-	return self_paths
+	return paths
 
 
 
@@ -184,7 +218,9 @@ def getHeightmap(arg):
 
 
 
-def generateGcode(arg):
+def generateGcode(*args):
+	arg = args[0][0]
+	orientation = args[0][1]
 	global diameter, step, feed
 	command = ["./operationPlaner"]
 	p = Popen(command, stdout=PIPE, stdin=PIPE, stderr=STDOUT)	
@@ -206,16 +242,19 @@ def generateGcode(arg):
 	
 	img = Image(length, width, scale,  zmax=zmax, array=array, channels=1, depth = 16)
 	#getting paths 
-	paths = run_rough(img, values)
+	paths = run_rough(img, values, plan, orientation)
 	#generating gcode from paths
 	gcode = generateGcodeFromPath(paths, values["feed"], values["jog"], values["plunge"])
 	return gcode
 
-
-
-
-
-
+def getModel(state):
+	length = state["model"]["length"]
+	width = state["model"]["width"]
+	height = state["model"]["height"]
+	raw = state["model"]["raw"].split(" ")
+	model = [[[raw[(z*(length*width)) + (x*(width)) + y]	for y in range(width)]for x in range(length)] for z in range(height)]
+	return model
+			
 
 stlFilename = sys.argv[1]
 diameter = float(sys.argv[2])
@@ -226,14 +265,19 @@ try:
 	command = ["./heightmapGenerator", stlFilename]
 	generatorOutput = subprocess.check_output(command)
 	state = json.loads(generatorOutput)
+	model = getModel(state)
+	scale = state["scale"]
+	modelLength = state["model"]["length"]
+	modelWidth = state["model"]["width"]
+	modelHeight = state["model"]["height"]
 
 	argumentsToOperationPlanner = parseState(state)
 	
-	pool = Pool(len(state["heightmaps"]))
-	gcodes = pool.map(generateGcode, tuple(argumentsToOperationPlanner)) 
+	# pool = Pool(len(state["heightmaps"]))
+	# gcodes = pool.map(generateGcode, tuple(argumentsToOperationPlanner)) 
 	
-	# gcodes = generateGcode(argumentsToOperationPlanner[0])
-	
+	gcodes = generateGcode(argumentsToOperationPlanner[0])
+
 	print gcodes
 except(CalledProcessError):
 	print "Error: Something went terribly wrong! No i am not ex-microsoft employee"
