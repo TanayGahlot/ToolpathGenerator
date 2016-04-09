@@ -186,7 +186,7 @@ int main(int argc, char **argv){
 	//letting the user know what the scale of model
 	string jsonOutput = "";
 
-	jsonOutput += "{\"scale\":" + to_string(scale) + ", \"heightmap\":[";
+	jsonOutput += "{\"scale\":" + to_string(scale) + ", \"heightmaps\":[";
 
 	//getting heightmap for each orientation 
 	int i;

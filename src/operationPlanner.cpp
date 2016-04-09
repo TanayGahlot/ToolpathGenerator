@@ -302,7 +302,7 @@ string print(OperationPlan plan, RegionMap regionmap){
 
 	for(i=0; i<length; i++){
 		for(j=0; j<width; j++){
-			jsonOutput += to_string(regionmap[i][j]);
+			jsonOutput += to_string(regionmap.first[i][j]) + " ";
 		}
 	}
 
@@ -310,11 +310,19 @@ string print(OperationPlan plan, RegionMap regionmap){
 
 	jsonOutput += "\"operationPlan\": [";
 	int noOfOperation = plan.size();
-	AdjList::iterator iter ;
+	OperationPlan::iterator iter ;
 
 	for(iter=plan.begin(); iter != plan.end(); iter++ ){
-		json
+		jsonOutput += "{\"regionlist\": \"";
+		AdjList::iterator region;
+		for(region = (iter->first).begin(); region != (iter->first).end(); region++){
+			jsonOutput += to_string(*region) + " ";
+		}
+		jsonOutput += "\", \"startHeight\": " + to_string((iter->second).first) + ",\"depth\":" + to_string((iter->second).second) + "},";
 	}
+	jsonOutput.pop_back();
+	jsonOutput += "]}";
+	return jsonOutput;
 }
 
 
@@ -335,11 +343,8 @@ int main(int argc, char **argv){
 	}
 
 	OperationPlan operationPlan = makeOperationPlan(heightmap, regionMap, maxHeight);
-	// string planJson = print(operationPlan);
+	string planJson = print(operationPlan, regionMap);
 
-
-
-
-	// cout<<planJson;
+	cout<<planJson;
 	return 0;
 }
