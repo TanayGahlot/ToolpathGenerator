@@ -342,7 +342,16 @@ int main(int argc, char **argv){
 		}
 	}
 
+
 	OperationPlan operationPlan = makeOperationPlan(heightmap, regionMap, maxHeight);
+
+	// for(i=0; i<length; i++){
+	// 	for(j=0; j<width; j++){
+	// 		cout<<regionMap.first[i][j]<<" ";
+	// 	}
+	// 	cout<<"\n";
+	// }
+	
 	string planJson = print(operationPlan, regionMap);
 
 	cout<<planJson;

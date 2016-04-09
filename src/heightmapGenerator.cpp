@@ -196,6 +196,7 @@ int main(int argc, char **argv){
 		Matrix heightmap = volumeAndHeightmap.second;
 
 		if(machinableVolume > 0){
+			
 			jsonOutput += "{\"orientation\": \"" + SET_OF_ORIENTATIONS[i] + "\",\"volume\": " + to_string(machinableVolume) + ", ";
 
 			int length = heightmap.size();
