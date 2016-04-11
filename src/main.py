@@ -61,7 +61,7 @@ def  generateGcodeFromPath(paths, feed, jog, plunge):
 
 
 	# Move up before starting spindle
-	gcode += "G00Z%0.4f\n" % (scale*jog)
+	gcode += "G00 Z%0.4f\n" % (scale*jog)
 	
 	xy  = lambda x,y:   (scale*x, scale*y)
 	xyz = lambda x,y,z: (scale*x, scale*y, scale*z)
@@ -70,21 +70,21 @@ def  generateGcodeFromPath(paths, feed, jog, plunge):
 	for p in paths:
 		# gcode += "------------\n"
 		# Move to the start of this path at the jog height
-		gcode += "G00X%0.4fY%0.4fZ%0.4f\n" %(xyz(p.points[0][0], p.points[0][1], jog))
+		gcode += "G00 X%0.4f Y%0.4f Z%0.4f\n" %(xyz(p.points[0][0], p.points[0][1], jog))
 
 		# Plunge to the desired depth
-		gcode += "G01Z%0.4f F%0.4f\n" % (p.points[0][2]*scale, 60*scale*plunge)
+		gcode += "G01 Z%0.4f F%0.4f\n" % (p.points[0][2]*scale, 60*scale*plunge)
 
 		# Restore XY feed rate
 		gcode += "F%0.4f\n" % (60*scale*feed)
 
 		# Cut each point in the segment
 		for pt in p.points:
-			if flat:	gcode += "X%0.4fY%0.4f\n" % xy(*pt[0:2])
-			else:	   gcode += "X%0.4fY%0.4fZ%0.4f\n" % xyz(*pt)
+			if flat:	gcode += "G01 X%0.4f Y%0.4f\n" % xy(*pt[0:2])
+			else:	   gcode += "G01 X%0.4f Y%0.4f Z%0.4f\n" % xyz(*pt)
 
 		# Lift the bit up to the jog height at the end of the segment
-		gcode += "Z%0.4f\n" % (scale*jog)
+		gcode += "G01 Z%0.4f\n" % (scale*jog)
 
 
 	gcode += "M30\n" # program end and reset
@@ -123,7 +123,10 @@ def generateBitmap(operation, orientation, regionmap, z):
 
 	for x in range(length):
 		for y in range(width):
-			bitmap[x][y] = [int(regionmap[x][y] in operationList)] #and toBeMachined(orientation, x, y, z)]
+			if regionmap[x][y] in operationList:
+				bitmap[x][y] = [0]
+			else: 
+				bitmap[x][y] = [1]                 #and toBeMachined(orientation, x, y, z)]
 			# print int(bitmap[x][y][0]),
 		# print "-"
 	# print "---------------------"
@@ -132,6 +135,14 @@ def generateBitmap(operation, orientation, regionmap, z):
 
 	return img 
 
+def getMaxHeight(orientation):
+	global modelLength, modelWidth, modelHeight
+	if orientation == "xy+" or orientation == "xy-":
+		return modelHeight
+	elif orientation == "xz+" or orientation == "xz-":
+		return modelWidth
+	elif orientation == "yz+" or orientation == "yz-":
+		return modelLength
 
 def run_rough(img, values, plan, orientation):
 	""" @brief Calculates a rough cut toolpath
@@ -145,11 +156,11 @@ def run_rough(img, values, plan, orientation):
 	# Save image's original z values (which may have been None)
 	old_zvals = img.zmin, img.zmax
 
-	paths = []
+	global_paths = []
 	for operation in operations:	
 		# Figure out the set of z values at which to cut
-		values["top"] = operation["startHeight"]
-		values["bottom"] = operation["startHeight"] - operation["depth"] + 1
+		values["top"] = operation["startHeight"]/scale
+		values["bottom"] = (operation["startHeight"] - operation["depth"] + 1)/scale
 		heights = [values['top']]
 		while heights[-1] > values['bottom']:
 			heights.append(heights[-1]-values['step'])
@@ -181,19 +192,19 @@ def run_rough(img, values, plan, orientation):
 					values['diameter'], values['offsets'], values['overlap']
 				)
 
-			for p in paths:	p.set_z(z-values['top'])
+			for p in paths:	p.set_z(z-(getMaxHeight(orientation))/scale)
 
 			last_paths = paths
 			last_image = L
 			self_paths += paths
 
-		paths += self_paths
+		global_paths += self_paths
 	
 
 	# Restore z values on image
 	img.zmin, img.zmax = old_zvals
 
-	return paths
+	return global_paths
 
 
 
@@ -213,7 +224,7 @@ def getHeightmap(arg):
 	#normalization of 16 bit array
 	array = np.array(array);
 	zmax = max(array.flatten()) - 1; 
-	array = array*65535/(zmax * scale) #to account for scale
+	array = array*65535/((zmax) * scale) #to account for scale
 	return (length, width, zmax, scale, array)
 
 
@@ -256,26 +267,36 @@ def getModel(state):
 	return model
 			
 
-stlFilename = sys.argv[1]
-diameter = float(sys.argv[2])
-step = float(sys.argv[3])
-feed = float(sys.argv[4])
+#taking input from commandline 
+if len(sys.argv) == 5:
+	stlFilename = sys.argv[1]
+	diameter = float(sys.argv[2])
+	step = float(sys.argv[3])
+	feed = float(sys.argv[4])
+else: 
+	print "Usage Error: Incorrect input arguments " + str(sys.argv)
+	exit(-1)
 
+#generating toolpath by generating heightmap followed by parallezing sript for operation plannning and distance transform 
 try:
 	command = ["./heightmapGenerator", stlFilename]
-	generatorOutput = subprocess.check_output(command)
+	generatorOutput = subprocess.check_output(command);
 	state = json.loads(generatorOutput)
+	
+	#global variable to provide common access to volumetric model for process 
 	model = getModel(state)
 	scale = state["scale"]
 	modelLength = state["model"]["length"]
 	modelWidth = state["model"]["width"]
 	modelHeight = state["model"]["height"]
 
+	#formatting input for gcode generator 
+	#input: <heightmap, orientation>
 	argumentsToOperationPlanner = parseState(state)
 	
+	#pool the task to processor to parallize gcode generation for individual orientation 
 	# pool = Pool(len(state["heightmaps"]))
 	# gcodes = pool.map(generateGcode, tuple(argumentsToOperationPlanner)) 
-	
 	gcodes = generateGcode(argumentsToOperationPlanner[0])
 
 	print gcodes

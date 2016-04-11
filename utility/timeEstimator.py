@@ -21,7 +21,7 @@ machineTime = 0
 command = raw_input()
 while command:
 	command = command.split(' ')
-	if command[0] == "G0" or command[0] == "G1":
+	if command[0] == "G00" or command[0] == "G01":
 		xnext = xcurrent
 		ynext = ycurrent
 		znext = zcurrent
@@ -43,7 +43,7 @@ while command:
 	except EOFError:
 		print machineTime
 		sys.exit(0)
-
+print machineTime
 
 
 
