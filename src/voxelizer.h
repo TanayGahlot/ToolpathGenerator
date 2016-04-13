@@ -31,10 +31,8 @@ cvmlcpp::Matrix<int, 3u> getVoxelizedMatrixFromFile(char *stlFile, int *scale){
 	float maxDim = max(boundX, max(boundY, boundZ));
 	
 	// *scale = 1;
-	if(maxDim < 200)
+	if(maxDim < 40)
 		*scale = 10;
-	else if(maxDim < 500)
-		*scale = 5;
 	else if(maxDim < 1200)
 		*scale = 2;
 	else{

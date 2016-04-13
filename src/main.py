@@ -13,10 +13,18 @@ from subprocess import Popen, PIPE, STDOUT
 import numpy as np 
 from koko.fab.image import Image
 
+#state variables 
+#possible set of orientation along with their maping used in model  
 SET_OF_ORIENTATIONS = ["xy+", "xy-", "xz+", "xz-", "yz+", "yz-"]
 ORIENTATION_CODE = {"xy+":11, "xy-":12, "yz+":13, "yz-":14, "xz+":15, "xz-":16}
 
+
 def parseState(state):
+	"""" 
+		prepare input for gcodeGenerator 
+		i/p:state varible
+		o/p:list of tuple <formatted argument, orientation>
+	"""
 	args = []
 	for heightmap in state["heightmaps"]:
 		arg = str(heightmap["length"]) + " " +str(heightmap["width"])  + " "
@@ -30,8 +38,9 @@ def parseState(state):
 		args.append((arg, heightmap["orientation"]))
 	return args 
 
-def  generateGcodeFromPath(paths, feed, jog, plunge):
-	''' Convert the path from the previous panel into a g-code string 
+def generateGcodeFromPath(paths, feed, jog, plunge):
+	'''
+		Convert the path from the previous panel into a g-code string 
 	'''
 	
 	# Check to see if all of the z values are the same.  If so,
@@ -91,6 +100,9 @@ def  generateGcodeFromPath(paths, feed, jog, plunge):
 	return gcode 
 
 def getRegionmap(plan):
+	"""
+		converts raw regionmap string to two-dimnesional regionmap
+	"""
 	length = plan["regionmap"]["length"]
 	width = plan["regionmap"]["width"]
 	raw = plan["regionmap"]["raw"].split(" ")
@@ -98,22 +110,30 @@ def getRegionmap(plan):
 	return regionmap
 
 def toBeMachined(orientation, x, y, z):
+	"""
+		checks if given orientation is suppose to machine the point (x, y, z)
+	"""
+	global scale 
+	z*=scale;
 	z=int(z) #to have integeral index
 	global model, modelLength, modelWidth, modelHeight 
 	if orientation == "xy+":
 		return model[x][y][z-1] == ORIENTATION_CODE[orientation]
 	elif orientation == "xy-":
-		return model[x][y][modelHeight - z +1] == ORIENTATION_CODE[orientation]
+		return model[x][y][modelHeight - z -1] == ORIENTATION_CODE[orientation]
 	elif orientation == "yz+":
 		return model[z-1][x][y] == ORIENTATION_CODE[orientation]
 	elif orientation == "yz-":
-		return model[modelLength-z + 1][x][y] == ORIENTATION_CODE[orientation]
+		return model[modelLength-z-1][x][y] == ORIENTATION_CODE[orientation]
 	elif orientation == "xz+":
 		return model[x][z-1][y] == ORIENTATION_CODE[orientation]
 	elif orientation == "xz-":
-		return model[x][modelWidth-z +1][y] == ORIENTATION_CODE[orientation]
+		return model[z][modelWidth-z -1][y] == ORIENTATION_CODE[orientation]
 
 def generateBitmap(operation, orientation, regionmap, z):
+	"""
+		generate bitmap for an operation's z-height level
+	"""
 	global scale
 	length = len(regionmap)
 	width = len(regionmap[0])
@@ -124,9 +144,13 @@ def generateBitmap(operation, orientation, regionmap, z):
 	for x in range(length):
 		for y in range(width):
 			if regionmap[x][y] in operationList:
-				bitmap[x][y] = [0]
+				bitmap[x][y] = [0] #shoundnt be cut
 			else: 
-				bitmap[x][y] = [1]                 #and toBeMachined(orientation, x, y, z)]
+				# if toBeMachined(orientation, x, y, z):
+				# 	bitmap[x][y] = [0]     #shoundnt be cut
+				# else:
+				# 	bitmap[x][y] = [1] #should be cut 
+				bitmap[x][y] = [1]
 			# print int(bitmap[x][y][0]),
 		# print "-"
 	# print "---------------------"
@@ -136,6 +160,9 @@ def generateBitmap(operation, orientation, regionmap, z):
 	return img 
 
 def getMaxHeight(orientation):
+	"""
+		get height of bounding box in given orientation 
+	"""
 	global modelLength, modelWidth, modelHeight
 	if orientation == "xy+" or orientation == "xy-":
 		return modelHeight
@@ -206,10 +233,10 @@ def run_rough(img, values, plan, orientation):
 
 	return global_paths
 
-
-
-
 def getHeightmap(arg):
+	"""
+		parse heightmap from given input
+	"""
 	global state
 
 	split_arg = arg.split("\n")
@@ -227,9 +254,11 @@ def getHeightmap(arg):
 	array = array*65535/((zmax) * scale) #to account for scale
 	return (length, width, zmax, scale, array)
 
-
-
 def generateGcode(*args):
+	"""
+		generate gcode for heightmap in a given orientation
+		note: [toBeImproved]heightmap passed as formatted string isnt a good way to structure the code  
+	"""
 	arg = args[0][0]
 	orientation = args[0][1]
 	global diameter, step, feed
@@ -259,11 +288,15 @@ def generateGcode(*args):
 	return gcode
 
 def getModel(state):
+	"""
+		parse raw model into three dimesional array(list)
+	"""
 	length = state["model"]["length"]
 	width = state["model"]["width"]
 	height = state["model"]["height"]
 	raw = state["model"]["raw"].split(" ")
-	model = [[[raw[(z*(length*width)) + (x*(width)) + y]	for y in range(width)]for x in range(length)] for z in range(height)]
+	model = [[[int(raw[(z + (x*(width*height)) + (y*height))])	for z in range(height)]for y in range(width)] for x in range(length)]
+	# print model;exit(-1)
 	return model
 			
 
@@ -290,18 +323,37 @@ try:
 	modelWidth = state["model"]["width"]
 	modelHeight = state["model"]["height"]
 
+	
 	#formatting input for gcode generator 
 	#input: <heightmap, orientation>
 	argumentsToOperationPlanner = parseState(state)
 	
 	#pool the task to processor to parallize gcode generation for individual orientation 
-	# pool = Pool(len(state["heightmaps"]))
-	# gcodes = pool.map(generateGcode, tuple(argumentsToOperationPlanner)) 
-	gcodes = generateGcode(argumentsToOperationPlanner[0])
+	pool = Pool(len(state["heightmaps"]))
+	gcodes = pool.map(generateGcode, tuple(argumentsToOperationPlanner)) 
+	
+	response = []
+	sequence = []
+	for i in range(len(state["heightmaps"])):
 
-	print gcodes
+		orientation = state["heightmaps"][i]["orientation"]
+		response.append({"orientation": orientation, "gcode": gcodes[i]})
+		
+		# gcode = generateGcode(argumentsToOperationPlanner[i])
+		
+		fob= open("./ironman/" + orientation+ ".nc", "w")
+		fob.write(gcodes[i])
+		fob.close()
+		sequence.append(orientation)
+	print sequence
+	
+	# gcodes = generateGcode(argumentsToOperationPlanner[0])
+	# print gcodes
+
+	# print json.dumps(response)
+
 except(CalledProcessError):
-	print "Error: Something went terribly wrong! No i am not ex-microsoft employee"
+	print "Error: Heightmap generator failed"
 
 
 

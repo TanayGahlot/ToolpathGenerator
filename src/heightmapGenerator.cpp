@@ -1,6 +1,7 @@
 //oggpnosn 
 //hkhr 
 
+//generate sequence of setup orientation in 
 #include <iostream>
 #include <list>
 #include <vector>
@@ -17,7 +18,7 @@
 #include "voxelizer.h"
 
 
-//heightmap generator 
+
 using namespace std;
 
 string SET_OF_ORIENTATIONS[] =  {"xy+", "xy-", "xz+", "xz-", "yz+", "yz-"};
@@ -162,13 +163,14 @@ string print(cvmlcpp::Matrix<int, 3u> model){
 	int xmax = (*iter); iter++; int ymax = (*iter); iter++; int zmax = (*iter);
 	int xmin =0, ymin =0, zmin=0;
 	xmax-=1; ymax-=1; zmax-=1;
-	for(int z=zmin; z<=zmax; z++){
-		for(int x=xmin; x<=xmax; x++){
-			for(int y=ymin; y<=ymax; y++){
-					modelString += to_string(model[x][y][z]) + " ";
-			}
-			// cout<<"\n";
+	
+	for(int x=xmin; x<=xmax; x++){
+		for(int y=ymin; y<=ymax; y++){
+			for(int z=zmin; z<=zmax; z++){
+				modelString += to_string(model[x][y][z]) + " ";
 		}
+		// cout<<"\n";
+	}
 		// cout<<"\n";
 	}
 	return modelString;
