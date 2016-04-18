@@ -30,9 +30,21 @@ list<Point_2D> findNeighbour(Point_2D point, int N, int M){
 
 	if(point.first+1<N){
 		neighbour.push_back(make_pair(point.first+1, point.second));
+		if(point.second-1>=0){
+			neighbour.push_back(make_pair(point.first+1, point.second-1));	
+		}
+		if(point.second+1 < M){
+			neighbour.push_back(make_pair(point.first+1, point.second+1));	
+		}
 	}
 	if(point.first-1>=0){
 		neighbour.push_back(make_pair(point.first-1, point.second));	
+		if(point.second-1>=0){
+			neighbour.push_back(make_pair(point.first-1, point.second-1));	
+		}
+		if(point.second+1 < M){
+			neighbour.push_back(make_pair(point.first-1, point.second+1));	
+		}
 	}
 	if(point.second-1>=0){
 		neighbour.push_back(make_pair(point.first, point.second-1));	

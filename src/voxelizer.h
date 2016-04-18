@@ -30,15 +30,15 @@ cvmlcpp::Matrix<int, 3u> getVoxelizedMatrixFromFile(char *stlFile, int *scale){
 	int boundZ = (int)(geometry.max(2) - geometry.min(2));
 	float maxDim = max(boundX, max(boundY, boundZ));
 	
-	// *scale = 1;
-	if(maxDim < 40)
-		*scale = 10;
-	else if(maxDim < 1200)
-		*scale = 2;
-	else{
-		cout<<"Error: Given STL file is too big for this generator";
-		exit(-1);
-	}
+	*scale = 1;
+	// if(maxDim < 40)
+	// 	*scale = 10;
+	// else if(maxDim < 1200)
+	// 	*scale = 2;
+	// else{
+	// 	cout<<"Error: Given STL file is too big for this generator";
+	// 	exit(-1);
+	// }
 
 
 	if(TURN_ON_SCALE){

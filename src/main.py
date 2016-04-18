@@ -46,11 +46,11 @@ def generateGcodeFromPath(paths, feed, jog, plunge):
 	# Check to see if all of the z values are the same.  If so,
 	# we can use 2D cutting commands; if not, we'll need
 	# to do full three-axis motion control
-	zmin = paths[0].points[0][2]
-	flat = True
-	for p in paths:
-		if not all(pt[2] == zmin for pt in p.points):
-			flat = False
+	# zmin = paths[0].points[0][2]
+	# flat = True
+	# for p in paths:
+	# 	if not all(pt[2] == zmin for pt in p.points):
+	# 		flat = False
 
 	gcode = ""
 
@@ -89,9 +89,10 @@ def generateGcodeFromPath(paths, feed, jog, plunge):
 
 		# Cut each point in the segment
 		for pt in p.points:
-			if flat:	gcode += "G01 X%0.4f Y%0.4f\n" % xy(*pt[0:2])
-			else:	   gcode += "G01 X%0.4f Y%0.4f Z%0.4f\n" % xyz(*pt)
-
+			# if flat:	gcode += "G01 X%0.4f Y%0.4f\n" % xy(*pt[0:2])
+			# else:	   gcode += "G01 X%0.4f Y%0.4f Z%0.4f\n" % xyz(*pt)
+			gcode += "G01 X%0.4f Y%0.4f Z%0.4f\n" % xyz(*pt)
+			
 		# Lift the bit up to the jog height at the end of the segment
 		gcode += "G01 Z%0.4f\n" % (scale*jog)
 
@@ -144,12 +145,11 @@ def generateBitmap(operation, orientation, regionmap, z):
 	for x in range(length):
 		for y in range(width):
 			if regionmap[x][y] in operationList:
-				bitmap[x][y] = [0] #shoundnt be cut
+				if toBeMachined(orientation, x, y, z):
+					bitmap[x][y] = [0]     #shoundnt be cut
+				else:
+					bitmap[x][y] = [1] #should be cut 
 			else: 
-				# if toBeMachined(orientation, x, y, z):
-				# 	bitmap[x][y] = [0]     #shoundnt be cut
-				# else:
-				# 	bitmap[x][y] = [1] #should be cut 
 				bitmap[x][y] = [1]
 			# print int(bitmap[x][y][0]),
 		# print "-"
@@ -176,6 +176,8 @@ def run_rough(img, values, plan, orientation):
 		@param img Input image
 		@returns Dictionary with 'paths' defined
 	"""
+	print orientation
+
 	global state 
 
 	regionmap = getRegionmap(plan)
@@ -193,6 +195,9 @@ def run_rough(img, values, plan, orientation):
 			heights.append(heights[-1]-values['step'])
 		heights[-1] = values['bottom']
 
+		print operation["regionlist"]
+		print heights
+		print 
 		# Loop over z values, accumulating samples
 		
 		np.set_printoptions(threshold='nan')
@@ -315,7 +320,6 @@ try:
 	command = ["./heightmapGenerator", stlFilename]
 	generatorOutput = subprocess.check_output(command);
 	state = json.loads(generatorOutput)
-	
 	#global variable to provide common access to volumetric model for process 
 	model = getModel(state)
 	scale = state["scale"]
@@ -323,26 +327,27 @@ try:
 	modelWidth = state["model"]["width"]
 	modelHeight = state["model"]["height"]
 
-	
+	for heightmap in state["heightmaps"]:
+		print heightmap["orientation"], heightmap["volume"]
 	#formatting input for gcode generator 
 	#input: <heightmap, orientation>
 	argumentsToOperationPlanner = parseState(state)
 	
 	#pool the task to processor to parallize gcode generation for individual orientation 
-	pool = Pool(len(state["heightmaps"]))
-	gcodes = pool.map(generateGcode, tuple(argumentsToOperationPlanner)) 
+	# pool = Pool(len(state["heightmaps"]))
+	# gcodes = pool.map(generateGcode, tuple(argumentsToOperationPlanner)) 
 	
 	response = []
 	sequence = []
 	for i in range(len(state["heightmaps"])):
 
 		orientation = state["heightmaps"][i]["orientation"]
-		response.append({"orientation": orientation, "gcode": gcodes[i]})
+		# response.append({"orientation": orientation, "gcode": gcodes[i]})
 		
-		# gcode = generateGcode(argumentsToOperationPlanner[i])
+		gcode = generateGcode(argumentsToOperationPlanner[i])
 		
-		fob= open("./ironman/" + orientation+ ".nc", "w")
-		fob.write(gcodes[i])
+		fob= open("./sword/" + orientation+ ".nc", "w")
+		fob.write(gcode)
 		fob.close()
 		sequence.append(orientation)
 	print sequence
