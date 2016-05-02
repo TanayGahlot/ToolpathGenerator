@@ -63,7 +63,7 @@ def generateGcodeFromPath(paths, feed, jog, plunge):
 	gcode += "G90\n"	# Absolute programming
 	gcode += "G94\n"	# Feedrate is per minute
 
-	scale = 1 # mm units
+	scale = 1 # mm units, note this scale is different from global scale thats defined, this is used primarily for units conversion
 
 
 	gcode += "F%0.4f\n" % (60*scale*feed)  # Feed rate
@@ -108,6 +108,13 @@ def getRegionmap(plan):
 	width = plan["regionmap"]["width"]
 	raw = plan["regionmap"]["raw"].split(" ")
 	regionmap = [[int(raw[i*width +j]) for j in range(width)]for i in range(length)]
+	
+	# #DEBUG TO GET REGIIONMAP IN HUMAN READABLE FORM 	
+	# for i in range(length):
+	# 	for j in range(width):
+	# 		print "%2d"%regionmap[i][j],
+	# 	print
+
 	return regionmap
 
 def toBeMachined(orientation, x, y, z):
@@ -176,7 +183,7 @@ def run_rough(img, values, plan, orientation):
 		@param img Input image
 		@returns Dictionary with 'paths' defined
 	"""
-	print orientation
+
 
 	global state 
 
@@ -195,9 +202,7 @@ def run_rough(img, values, plan, orientation):
 			heights.append(heights[-1]-values['step'])
 		heights[-1] = values['bottom']
 
-		print operation["regionlist"]
-		print heights
-		print 
+		
 		# Loop over z values, accumulating samples
 		
 		np.set_printoptions(threshold='nan')
@@ -327,8 +332,7 @@ try:
 	modelWidth = state["model"]["width"]
 	modelHeight = state["model"]["height"]
 
-	for heightmap in state["heightmaps"]:
-		print heightmap["orientation"], heightmap["volume"]
+	
 	#formatting input for gcode generator 
 	#input: <heightmap, orientation>
 	argumentsToOperationPlanner = parseState(state)
@@ -337,20 +341,29 @@ try:
 	# pool = Pool(len(state["heightmaps"]))
 	# gcodes = pool.map(generateGcode, tuple(argumentsToOperationPlanner)) 
 	
-	response = []
+	response = {"dimensions":[modelLength, modelWidth, modelHeight], "orientations": [], "gcodes":[]}
 	sequence = []
+	fileNames = []
 	for i in range(len(state["heightmaps"])):
 
 		orientation = state["heightmaps"][i]["orientation"]
 		# response.append({"orientation": orientation, "gcode": gcodes[i]})
-		
+
 		gcode = generateGcode(argumentsToOperationPlanner[i])
-		
-		fob= open("./sword/" + orientation+ ".nc", "w")
+
+		randomFileName = "k" + str( randrange(123422, 1212121212)) + ".nc"
+		fileNames.append(randomFileName)
+
+		fob= open("../public/download/" + randomFileName, "w")
 		fob.write(gcode)
 		fob.close()
+
 		sequence.append(orientation)
-	print sequence
+	
+	response["orientations"] = sequence
+	response["gcodes"] = fileNames
+
+	print json.dumps(response)
 	
 	# gcodes = generateGcode(argumentsToOperationPlanner[0])
 	# print gcodes

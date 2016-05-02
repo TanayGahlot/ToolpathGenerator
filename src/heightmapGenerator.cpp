@@ -21,7 +21,7 @@
 
 using namespace std;
 
-string SET_OF_ORIENTATIONS[] =  {"xy+", "xy-", "xz+", "xz-", "yz+", "yz-"};
+string SET_OF_ORIENTATIONS[] =  {"xy+", "xy-", "yz+", "yz-", "xz+", "xz-"};
 
 pair<ll, Matrix> getHeightmapAndMachinableVolume(cvmlcpp::Matrix<int, 3u> &model, string orientation){
 	
