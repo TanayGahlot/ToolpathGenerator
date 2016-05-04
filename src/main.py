@@ -63,7 +63,7 @@ def generateGcodeFromPath(paths, feed, jog, plunge):
 	gcode += "G90\n"	# Absolute programming
 	gcode += "G94\n"	# Feedrate is per minute
 
-	scale = 1 # mm units, note this scale is different from global scale thats defined, this is used primarily for units conversion
+	# scale = 1 # mm units, note this scale is different from global scale thats defined, this is used primarily for units conversion
 
 
 	gcode += "F%0.4f\n" % (60*scale*feed)  # Feed rate
@@ -72,29 +72,29 @@ def generateGcodeFromPath(paths, feed, jog, plunge):
 	# Move up before starting spindle
 	gcode += "G00 Z%0.4f\n" % (scale*jog)
 	
-	xy  = lambda x,y:   (scale*x, scale*y)
-	xyz = lambda x,y,z: (scale*x, scale*y, scale*z)
+	# xy  = lambda x,y:   (scale*x, scale*y)
+	# xyz = lambda x,y,z: (scale*x, scale*y, scale*z)
 
 
 	for p in paths:
 		# gcode += "------------\n"
 		# Move to the start of this path at the jog height
-		gcode += "G00 X%0.4f Y%0.4f Z%0.4f\n" %(xyz(p.points[0][0], p.points[0][1], jog))
+		gcode += "G00 X%0.4f Y%0.4f Z%0.4f\n" %(p.points[0][0], p.points[0][1], jog)
 
 		# Plunge to the desired depth
-		gcode += "G01 Z%0.4f F%0.4f\n" % (p.points[0][2]*scale, 60*scale*plunge)
+		gcode += "G01 Z%0.4f F%0.4f\n" % (p.points[0][2], 60*scale*plunge)
 
 		# Restore XY feed rate
-		gcode += "F%0.4f\n" % (60*scale*feed)
+		gcode += "F%0.4f\n" % (60*feed)
 
 		# Cut each point in the segment
 		for pt in p.points:
 			# if flat:	gcode += "G01 X%0.4f Y%0.4f\n" % xy(*pt[0:2])
 			# else:	   gcode += "G01 X%0.4f Y%0.4f Z%0.4f\n" % xyz(*pt)
-			gcode += "G01 X%0.4f Y%0.4f Z%0.4f\n" % xyz(*pt)
+			gcode += "G01 X%0.4f Y%0.4f Z%0.4f\n" %(pt[0], pt[1], pt[2])
 			
 		# Lift the bit up to the jog height at the end of the segment
-		gcode += "G01 Z%0.4f\n" % (scale*jog)
+		gcode += "G01 Z%0.4f\n" % (jog)
 
 
 	gcode += "M30\n" # program end and reset
@@ -136,7 +136,7 @@ def toBeMachined(orientation, x, y, z):
 	elif orientation == "xz+":
 		return model[x][z-1][y] == ORIENTATION_CODE[orientation]
 	elif orientation == "xz-":
-		return model[z][modelWidth-z -1][y] == ORIENTATION_CODE[orientation]
+		return model[x][modelWidth-z -1][y] == ORIENTATION_CODE[orientation]
 
 def generateBitmap(operation, orientation, regionmap, z):
 	"""
@@ -220,11 +220,6 @@ def run_rough(img, values, plan, orientation):
 				paths = [p.copy() for p in last_paths]
 			else:
 				distance = L.distance()
-
-				# fob =open("./transforms/tf_"+str(z), "w")
-				# fob.write(distance.array.__str__())
-				# fob.close()
-
 				paths = distance.contour(
 					values['diameter'], values['offsets'], values['overlap']
 				)
@@ -281,7 +276,7 @@ def generateGcode(*args):
 	values = {
 		'diameter':	diameter,
 		'offsets':	 -1,
-		'overlap':	 0.5,
+		'overlap':	 .5,
 		'step':		step,
 		'feed': feed,
 		 'plunge': 2.5,
@@ -354,7 +349,7 @@ try:
 		randomFileName = "k" + str( randrange(123422, 1212121212)) + ".nc"
 		fileNames.append(randomFileName)
 
-		fob= open("../public/download/" + randomFileName, "w")
+		fob= open("../public/download/" + str(i) + ".nc", "w")
 		fob.write(gcode)
 		fob.close()
 
