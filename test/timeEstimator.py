@@ -1,27 +1,29 @@
-#oggpnosn 
-#hkhr 
+#oggpnosn
+#hkhr
 
-#time estimator: estimates time it take to machine the input gcode 
+#time estimator: estimates time it take to machine the input gcode
 
 import sys
 import math
 
-#default feedrate 
-feedrate = 250 
+#default feedrate
+feedrate = 250
 
-#assigning current x,y,z position to origin 
+#assigning current x,y,z position to origin
 xcurrent = 0
 ycurrent = 0
 zcurrent = 0
 
-#assigning machining time ton be zero 
+#assigning machining time ton be zero
 machineTime = 0
 
 #taking gcode input from stdin
-command = raw_input()
-while command:
+filepath = sys.argv[1]
+fob = open(filepath)
+text = fob.read(); fob.close()
+for command in text.split("\n"):
 	command = command.split(' ')
-	if command[0] == "G0" or command[0] == "G1":
+	if command[0] == "G00" or command[0] == "G01":
 		xnext = xcurrent
 		ynext = ycurrent
 		znext = zcurrent
@@ -38,12 +40,5 @@ while command:
 		xcurrent = xnext
 		ycurrent = ynext
 		zcurrent = znext
-	try:
-		command = raw_input()
-	except EOFError:
-		print machineTime
-		sys.exit(0)
 
-
-
-
+print machineTime
