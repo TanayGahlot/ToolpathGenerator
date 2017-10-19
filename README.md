@@ -5,7 +5,7 @@ ToolpathGenerator automates toolpath planing process involved in toolpath genera
 
 ## Usage
 ### Dependancies
-The voxelizer built into the system requires [boost library for c+](www.boost.org) to compile. Please note that, the [cvmlcpp library](http://tech.unige.ch/cvmlcpp/) and [omptl library](http://tech.unige.ch/omptl/) has been modified and integrated into the source code.
+The voxelizer built into the system requires [boost library for c+](www.boost.org) to compile. Please note that, the [cvmlcpp library](https://github.com/fpbeekhof/cvmlcpp) has been modified and integrated into the source code.
 
 The voxelizer currently is known not to work on Mac, windows remains to be tested.
 
