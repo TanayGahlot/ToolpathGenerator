@@ -308,7 +308,7 @@ string print(OperationPlan plan, RegionMap regionmap){
 
 	jsonOutput += "\"},";
 
-	jsonOutput += "\"operationPlan\": [";
+	jsonOutput += "\"operationPlan\": [ ";
 	int noOfOperation = plan.size();
 	OperationPlan::iterator iter ;
 
